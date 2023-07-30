@@ -147,9 +147,13 @@ contract KernelStorage {
         _defaultValidator.enable(_data);
     }
 
-    function setOwner(address _newOwner) external onlyFromEntryPointOrOwnerOrSelf{
+    function setOwner(address _newOwner) external onlyFromEntryPointOrOwnerOrSelf {
         require(_newOwner != address(0), "Address cannot be 0");
         getKernelStorage().owner = _newOwner;
+    }
+
+    function getOwner() external view returns (address) {
+        return getKernelStorage().owner;
     }
 
     /// @notice Updates the disabled mode
