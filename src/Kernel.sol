@@ -17,7 +17,6 @@ import "./utils/KernelHelper.sol";
 /// @notice wallet kernel for minimal wallet functionality
 contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
     string public constant name = "Kernel";
-
     string public constant version = "0.0.2";
 
     /// @dev Sets up the EIP712 and KernelStorage with the provided entry point

@@ -18,6 +18,7 @@ struct WalletKernelStorage {
     bytes32 __deprecated; // A deprecated field
     bytes4 disabledMode; // Mode which is currently disabled
     uint48 lastDisabledTime; // Last time when a mode was disabled
+    address owner;
     IKernelValidator defaultValidator; // Default validator for the wallet
     mapping(bytes4 => ExecutionDetail) execution; // Mapping of function selectors to execution details
 }
@@ -35,11 +36,13 @@ contract KernelStorage {
     event Upgraded(address indexed newImplementation);
     event DefaultValidatorChanged(address indexed oldValidator, address indexed newValidator);
     event ExecutionChanged(bytes4 indexed selector, address indexed executor, address indexed validator);
+    event OwnerUpdated(address indexed newOwner);
 
     // Modifier to check if the function is called by the entry point, the contract itself or the owner
     modifier onlyFromEntryPointOrOwnerOrSelf() {
+        address owner = getKernelStorage().owner;
         require(
-            msg.sender == address(entryPoint) || msg.sender == address(this),
+            msg.sender == address(entryPoint) || msg.sender == address(this) || msg.sender == owner,
             "account: not from entrypoint or owner or self"
         );
         _;
@@ -57,6 +60,7 @@ contract KernelStorage {
         WalletKernelStorage storage ws = getKernelStorage();
         require(address(ws.defaultValidator) == address(0), "account: already initialized");
         ws.defaultValidator = _defaultValidator;
+        ws.owner = abi.decode(_data, (address));
         emit DefaultValidatorChanged(address(0), address(_defaultValidator));
         _defaultValidator.enable(_data);
     }
@@ -141,6 +145,11 @@ contract KernelStorage {
         getKernelStorage().defaultValidator = _defaultValidator;
         emit DefaultValidatorChanged(address(oldValidator), address(_defaultValidator));
         _defaultValidator.enable(_data);
+    }
+
+    function setOwner(address _newOwner) external onlyFromEntryPointOrOwnerOrSelf{
+        require(_newOwner != address(0), "Address cannot be 0");
+        getKernelStorage().owner = _newOwner;
     }
 
     /// @notice Updates the disabled mode

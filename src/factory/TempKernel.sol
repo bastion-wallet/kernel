@@ -33,6 +33,7 @@ contract TempKernel is EIP712, IAccount {
         WalletKernelStorage storage ws = getKernelStorage();
         require(address(ws.defaultValidator) == address(0), "account: already initialized");
         ws.defaultValidator = _defaultValidator;
+        ws.owner = abi.decode(_data, (address));
         // _defaultValidator.enable(_data); removed to avoid accessing external storage
         getStorage().newTemplate = _newTemplate;
         getStorage().data = _data;
