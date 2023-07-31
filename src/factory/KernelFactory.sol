@@ -42,7 +42,7 @@ contract KernelFactory {
             return EIP1967Proxy(payable(addr));
         }
         proxy =
-        new EIP1967Proxy{salt: salt}(address(kernelTemplate), abi.encodeCall(TempKernel.initialize, (_validator, address(nextTemplate), _data)));
+        new EIP1967Proxy{salt: salt}(address(nextTemplate), abi.encodeCall(TempKernel.initialize, (_validator, address(nextTemplate), _data)));
         emit AccountCreated(address(proxy), address(_validator), _data, _index);
     }
 

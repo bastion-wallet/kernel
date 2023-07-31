@@ -23,11 +23,13 @@ contract DeployKernel is Script {
         address kernelFactory = address(bytes20(returnData));
         console.log("KernelFactory deployed at: %s", kernelFactory);
 
-        bytecode = type(ECDSAValidator).creationCode;
-        (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
-        require(success, "Failed to deploy ECDSAValidator");
-        address validator = address(bytes20(returnData));
-        console.log("ECDSAValidator deployed at: %s", validator);
+        // bytecode = type(ECDSAValidator).creationCode;
+        // (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
+        // require(success, "Failed to deploy ECDSAValidator");
+        // address validator = address(bytes20(returnData));
+        // console.log("ECDSAValidator deployed at: %s", validator);
+
+        address validator = 0x180D6465F921C7E0DEA0040107D342c87455fFF5;
 
         bytecode = type(ECDSAKernelFactory).creationCode;
         (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(
@@ -45,7 +47,12 @@ contract DeployKernel is Script {
     }
 }
 
-// Deterministic addresses
+// Old ones with the TempKernel template
 // KernelFactory deployed at: 0x5CE6FEF9172915a4D9A7C8B1cC9B5B279a7511e3
 // ECDSAValidator deployed at: 0x180D6465F921C7E0DEA0040107D342c87455fFF5
 // ECDSAKernelFactory deployed at: 0x7806D99EE789162E9609E979099D043f2bEff18f
+
+// New ones after changing the template
+// KernelFactory deployed at: 0x3b6cEC6A8B3002Be78d2617b08d6a01d0B658cDa
+// ECDSAValidator deployed at: 0x180D6465F921C7E0DEA0040107D342c87455fFF5
+// ECDSAKernelFactory deployed at: 0x3d3080e19ed99050307153C3174D5D451fb9Db49
