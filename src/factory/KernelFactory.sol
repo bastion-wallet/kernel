@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "openzeppelin-contracts/contracts/utils/Create2.sol";
 import "./EIP1967Proxy.sol";
-import "src/Kernel.sol";
+import {Kernel} from "src/Kernel.sol";
 import "src/validator/ECDSAValidator.sol";
 
 import "./TempKernel.sol";
@@ -31,10 +31,7 @@ contract KernelFactory {
             keccak256(
                 abi.encodePacked(
                     type(EIP1967Proxy).creationCode,
-                    abi.encode(
-                        address(kernelTemplate),
-                        abi.encodeCall(TempKernel.initialize, (_validator, address(nextTemplate), _data))
-                    )
+                    abi.encode(address(nextTemplate), abi.encodeCall(nextTemplate.initialize, (_validator, _data)))
                 )
             )
         );
@@ -42,7 +39,7 @@ contract KernelFactory {
             return EIP1967Proxy(payable(addr));
         }
         proxy =
-        new EIP1967Proxy{salt: salt}(address(nextTemplate), abi.encodeCall(TempKernel.initialize, (_validator, address(nextTemplate), _data)));
+        new EIP1967Proxy{salt: salt}(address(nextTemplate), abi.encodeCall(nextTemplate.initialize, (_validator, _data)));
         emit AccountCreated(address(proxy), address(_validator), _data, _index);
     }
 
@@ -57,10 +54,7 @@ contract KernelFactory {
             keccak256(
                 abi.encodePacked(
                     type(EIP1967Proxy).creationCode,
-                    abi.encode(
-                        address(kernelTemplate),
-                        abi.encodeCall(TempKernel.initialize, (_validator, address(nextTemplate), _data))
-                    )
+                    abi.encode(address(nextTemplate), abi.encodeCall(nextTemplate.initialize, (_validator, _data)))
                 )
             )
         );

@@ -16,12 +16,12 @@ contract ECDSAKernelFactory {
     }
 
     function createAccount(address _owner, uint256 _index) external returns (EIP1967Proxy proxy) {
-        bytes memory data = abi.encode(_owner);
+        bytes memory data = abi.encodePacked(_owner);
         proxy = singletonFactory.createAccount(validator, data, _index);
     }
 
     function getAccountAddress(address _owner, uint256 _index) public view returns (address) {
-        bytes memory data = abi.encode(_owner);
+        bytes memory data = abi.encodePacked(_owner);
         return singletonFactory.getAccountAddress(validator, data, _index);
     }
 }

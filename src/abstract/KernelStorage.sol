@@ -60,7 +60,7 @@ contract KernelStorage {
         WalletKernelStorage storage ws = getKernelStorage();
         require(address(ws.defaultValidator) == address(0), "account: already initialized");
         ws.defaultValidator = _defaultValidator;
-        ws.owner = abi.decode(_data, (address));
+        ws.owner = address(bytes20(_data[0:20]));
         emit DefaultValidatorChanged(address(0), address(_defaultValidator));
         _defaultValidator.enable(_data);
     }

@@ -10,7 +10,7 @@ contract CreateAccount is Script {
         uint256 key = vm.envUint("DEPLOYER_PRIVATE_KEY");
         vm.startBroadcast(key);
 
-        ECDSAKernelFactory kernelFactory = ECDSAKernelFactory(0x3d3080e19ed99050307153C3174D5D451fb9Db49);
+        ECDSAKernelFactory kernelFactory = ECDSAKernelFactory(0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e);
         address owner = vm.addr(key);
         console.log("Owner: %s", owner);
         uint256 index = 0;
@@ -21,4 +21,5 @@ contract CreateAccount is Script {
 }
 
 //BatchActions.sol executor = 0xF3F98574AC89220B5ae422306dC38b947901b421
-//ECDSAKernelFactory = 0x3d3080e19ed99050307153C3174D5D451fb9Db49
+//ECDSAKernelFactory = 0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e
+//Account created at: 0x21Bcf2cDaAFd8eb972B3296AFf0eF24BD09dc256

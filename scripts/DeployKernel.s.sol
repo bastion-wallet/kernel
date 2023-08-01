@@ -53,6 +53,5 @@ contract DeployKernel is Script {
 // ECDSAKernelFactory deployed at: 0x7806D99EE789162E9609E979099D043f2bEff18f
 
 // New ones after changing the template
-// KernelFactory deployed at: 0x3b6cEC6A8B3002Be78d2617b08d6a01d0B658cDa
-// ECDSAValidator deployed at: 0x180D6465F921C7E0DEA0040107D342c87455fFF5
-// ECDSAKernelFactory deployed at: 0x3d3080e19ed99050307153C3174D5D451fb9Db49
+// KernelFactory deployed at: 0x62095e340967c464152c79a1cC26a27e11e57e5c
+// ECDSAKernelFactory deployed at: 0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e
