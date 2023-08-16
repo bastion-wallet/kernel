@@ -2,10 +2,10 @@
 pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "src/abstract/KernelStorage.sol";
 
-contract SubExecutor {
+contract SubExecutor is ReentrancyGuard {
     event preApproved(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
@@ -19,9 +19,7 @@ contract SubExecutor {
         address payee;
         address initiator;
         bool erc20TokensValid;
-        bool erc721TokensValid;
         address erc20Token;
-        address erc721Token;
     }
 
     struct PaymentRecord {
@@ -62,9 +60,8 @@ contract SubExecutor {
         uint256 _amount,
         uint256 _paymentInterval,
         uint256 _paymentLimit,
-        address erc20TokenAddress,
-        address erc721TokenAddress
-    ) public {
+        address erc20TokenAddress
+    ) external {
         SubStorage storage sub = getSubStorage();
         sub.amount = _amount;
         sub.validUntil = block.timestamp + 365 days;
@@ -79,15 +76,10 @@ contract SubExecutor {
             sub.erc20Token = erc20TokenAddress;
         }
 
-        if (erc721TokenAddress != address(0)) {
-            sub.erc721TokensValid = true;
-            sub.erc721Token = erc721TokenAddress;
-        }
-
         emit preApproved(msg.sender, _amount);
     }
 
-    function revokeApproval() public {
+    function revokeApproval() external {
         SubStorage storage sub = getSubStorage();
         require(msg.sender == sub.initiator, "Only the initiator can revoke the approval");
 
@@ -97,17 +89,17 @@ contract SubExecutor {
         emit revokedApproval(msg.sender);
     }
 
-    function getSubscriptions(address _subscriber) public view returns (SubStorage memory) {
+    function getSubscriptions(address _initiator) external view returns (SubStorage memory) {
         PaymentHistory storage ph = getPaymentHistoryStorage();
-        return ph.subscriptions[_subscriber];
+        return ph.subscriptions[_initiator];
     }
 
-    function getPaymentHistory(address _subscriber) public view returns (PaymentRecord[] memory) {
+    function getPaymentHistory(address _initiator) external view returns (PaymentRecord[] memory) {
         PaymentHistory storage ph = getPaymentHistoryStorage();
-        return ph.paymentRecords[_subscriber];
+        return ph.paymentRecords[_initiator];
     }
 
-    function processPayment() public {
+    function processPayment() external nonReentrant {
         SubStorage storage sub = getSubStorage();
         PaymentHistory storage ph = getPaymentHistoryStorage();
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
@@ -118,21 +110,39 @@ contract SubExecutor {
         //Check when the last payment was done
         PaymentRecord[] storage paymentHistory = ph.paymentRecords[msg.sender];
         PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
-        require(block.timestamp >= lastPayment.timestamp + sub.paymentInterval, "Payment interval not yet reached");
-
-        //Check whether it's a native payment or ERC20 or ERC721
-        if (sub.erc20TokensValid) {
-            IERC20 token = IERC20(sub.erc20Token);
-            token.transferFrom(msg.sender, sub.payee, sub.amount);
-        } else if (sub.erc721TokensValid) {
-            IERC721 token = IERC721(sub.erc721Token);
-            token.transferFrom(msg.sender, sub.payee, sub.amount);
-        } else {
-            payable(sub.payee).transfer(sub.amount);
-        }
+        require(
+            paymentHistory.length == 0 || block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
+            "Payment interval not yet reached"
+        );
 
         paymentHistory.push(PaymentRecord(sub.amount, block.timestamp, sub.payee));
 
+        //Check whether it's a native payment or ERC20 or ERC721
+        if (sub.erc20TokensValid) {
+            _processERC20Payment(sub);
+        } else {
+            _processEtherPayment(sub);
+        }
+
         emit paymentProcessed(msg.sender, sub.amount);
+    }
+
+    function _processERC20Payment(SubStorage storage sub) internal {
+        IERC20 token = IERC20(sub.erc20Token);
+        uint256 balance = token.balanceOf(address(this));
+        require(balance >= sub.amount, "Insufficient token balance");
+        token.transferFrom(msg.sender, sub.payee, sub.amount);
+    }
+
+    function _processEtherPayment(SubStorage storage sub) internal {
+        require(address(this).balance >= sub.amount, "Insufficient Ether balance");
+        payable(sub.payee).transfer(sub.amount);
+    }
+
+    //Function to remove ERC20tokens from the contract sent by mistake
+    function withdrawERC20Tokens(address _tokenAddress) external {
+        IERC20 token = IERC20(_tokenAddress);
+        //Check the balance of the caller and return the tokens
+        token.transfer(msg.sender, token.balanceOf(msg.sender));
     }
 }
