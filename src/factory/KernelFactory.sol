@@ -44,7 +44,7 @@ contract KernelFactory {
     }
 
     function getAccountAddress(IKernelValidator _validator, bytes calldata _data, uint256 _index)
-        public
+        external
         view
         returns (address)
     {
