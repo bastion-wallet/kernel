@@ -44,7 +44,7 @@ contract TempKernel is EIP712, IAccount {
     }
 
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
+        bytes32 storagePosition = bytes32(uint256(keccak256("bastion.kernel")) - 1);
         assembly {
             ws.slot := storagePosition
         }

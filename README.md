@@ -1,6 +1,6 @@
 # Kernel
 
-Kernel is a minimal smart contract account designed to be extended.
+Kernel is a minimal smart contract account designed by ZeroDev and extended by Bastion.
 
 - [Docs](https://docs.zerodev.app/extend-wallets/overview)
 - [Code](https://github.com/zerodevapp/kernel)
