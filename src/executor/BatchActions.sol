@@ -5,14 +5,14 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../utils/Exec.sol";
 
 contract BatchActions {
-    function executeBatch(address[] memory to, uint256[] memory value, bytes[] memory data, Operation operation)
+    function executeBatch(address[] calldata to, uint256[] calldata value, bytes[] calldata data, Operation operation)
         external
     {
         require(to.length == value.length && to.length == data.length, "Array lengths do not match");
         for(uint i = 0; i < to.length; i++) {
             require(to[i] != address(0), "Invalid address in 'to' array");
         }
-        
+
         for (uint256 i = 0; i < to.length; i++) {
             if (operation == Operation.Call) {
                 (bool success, bytes memory ret) = Exec.call(to[i], value[i], data[i]);
