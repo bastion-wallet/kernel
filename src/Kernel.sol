@@ -82,7 +82,6 @@ contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
         bytes4 sig = bytes4(userOp.callData[0:4]);
         if (mode == 0x00000000) {
             // sudo mode (use default validator)
-            op = userOp;
             op.signature = userOp.signature[4:];
             validator = getKernelStorage().defaultValidator;
         } else if (mode == 0x00000001) {
