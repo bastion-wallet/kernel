@@ -1,4 +1,4 @@
-pragma solidity ^0.8.18;
+pragma solidity >=0.8.0 <=0.8.19;
 
 import "src/validator/IValidator.sol";
 import "src/validator/KillSwitchValidator.sol";
