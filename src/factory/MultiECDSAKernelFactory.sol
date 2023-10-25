@@ -12,15 +12,72 @@ contract MultiECDSAKernelFactory is IAddressBook, Ownable {
     IEntryPoint public immutable entryPoint;
 
     address[] public owners;
+    uint8 public requiredSignatures = 2;
+    uint8 public numSignatories;
+    uint8 public numApprovals;
 
-    constructor(KernelFactory _singletonFactory, MultiECDSAValidator _validator, IEntryPoint _entryPoint) {
+    mapping(address => bool) public isSignatory;
+    mapping(address => bool) public approvals;
+
+    constructor(KernelFactory _singletonFactory, MultiECDSAValidator _validator, IEntryPoint _entryPoint, address[] memory _initialOwners) {
         singletonFactory = _singletonFactory;
         validator = _validator;
         entryPoint = _entryPoint;
+        
+        for (uint8 i = 0; i < _initialOwners.length; i++) {
+            owners.push(_initialOwners[i]);
+            isSignatory[_initialOwners[i]] = true;
+        }
+
+        numSignatories = uint8(_initialOwners.length);
     }
 
-    function setOwners(address[] calldata _owners) external onlyOwner {
+    modifier onlySignatory() {
+        require(isSignatory[msg.sender], "Not a signatory");
+        _;
+    }
+
+    function addSignatory(address _signatory) external onlyOwner {
+        require(!isSignatory[_signatory], "Already a signatory");
+        isSignatory[_signatory] = true;
+        numSignatories++;
+    }
+
+    function removeSignatory(address _signatory) external onlyOwner {
+        require(isSignatory[_signatory], "Not a signatory");
+        require(numSignatories > requiredSignatures, "Cannot remove the last signatory");
+        isSignatory[_signatory] = false;
+        numSignatories--;
+    }
+
+    function approveChange() external onlySignatory {
+        require(approvals[msg.sender] == false, "Already approved");
+        approvals[msg.sender] = true;
+        numApprovals++;
+    }
+
+    function revokeApproval() external onlySignatory {
+        require(approvals[msg.sender] == true, "Not approved");
+        approvals[msg.sender] = false;
+        numApprovals--;
+    }
+
+    /**
+    * @dev Updates the owners of the contract. Requires complete array of new owners.
+    * The entire array will be replaced with the provided one.
+    * @param _owners Array of new owners
+    */
+    function setOwners(address[] calldata _owners) external onlySignatory {
+        require(numApprovals >= requiredSignatures, "Insufficient approvals");
+        for(uint8 i = 0; i < owners.length; i++){
+            isSignatory[owners[i]] = false;
+        }
         owners = _owners;
+        numApprovals = 0;
+        for (uint8 i = 0; i < owners.length; i++) {
+            approvals[owners[i]] = false;
+            isSignatory[owners[i]] = true;
+        }
     }
 
     function getOwners() external view override returns(address[] memory) {
