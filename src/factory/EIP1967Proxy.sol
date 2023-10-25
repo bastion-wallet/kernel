@@ -11,6 +11,7 @@ contract EIP1967Proxy {
 
     constructor(address _logic, bytes memory _data) payable {
         require(_logic != address(0), "EIP1967Proxy: implementation is the zero address");
+        require(_logic.code.length > 0, "EIP1967Proxy: implementation is the EOA");
         bytes32 slot = _IMPLEMENTATION_SLOT;
         assembly {
             sstore(slot, _logic)
