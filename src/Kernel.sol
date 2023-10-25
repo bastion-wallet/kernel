@@ -22,10 +22,14 @@ contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
     /// @dev Sets up the EIP712 and KernelStorage with the provided entry point
     constructor(IEntryPoint _entryPoint) EIP712(name, version) KernelStorage(_entryPoint) {}
 
+    modifier onlyFromEntryPoint() {
+        require(msg.sender == address(entryPoint), "account: not from entrypoint");
+        _;
+    }
+ 
     /// @notice Accepts incoming Ether transactions and calls from the EntryPoint contract
     /// @dev This function will delegate any call to the appropriate executor based on the function signature.
-    fallback() external payable {
-        require(msg.sender == address(entryPoint), "account: not from entrypoint");
+    fallback() external payable onlyFromEntryPoint{
         bytes4 sig = msg.sig;
         address executor = getKernelStorage().execution[sig].executor;
         assembly {
@@ -44,8 +48,7 @@ contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
     /// @param value The amount of Ether to send
     /// @param data The call data to be sent
     /// @param operation The type of operation (call or delegatecall)
-    function execute(address to, uint256 value, bytes calldata data, Operation operation) external {
-        require(msg.sender == address(entryPoint), "account: not from entrypoint");
+    function execute(address to, uint256 value, bytes calldata data, Operation operation) external onlyFromEntryPoint{
         bool success;
         bytes memory ret;
         if (operation == Operation.DelegateCall) {
@@ -68,9 +71,9 @@ contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
     /// @return validationData The data used for validation
     function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
         external
+        onlyFromEntryPoint
         returns (uint256 validationData)
     {
-        require(msg.sender == address(entryPoint), "account: not from entryPoint");
         // mode based signature
         bytes4 mode = bytes4(userOp.signature[0:4]); // mode == 00..00 use validators
         require(mode & getKernelStorage().disabledMode == 0x00000000, "kernel: mode disabled");
