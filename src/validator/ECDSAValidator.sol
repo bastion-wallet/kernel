@@ -10,13 +10,16 @@ struct ECDSAValidatorStorage {
     address owner;
 }
 
+
 contract ECDSAValidator is IKernelValidator {
     event OwnerChanged(address indexed kernel, address indexed oldOwner, address indexed newOwner);
+    event OwnerDisabled(address indexed disableOwner);
 
     mapping(address => ECDSAValidatorStorage) public ecdsaValidatorStorage;
 
     function disable(bytes calldata) external override {
         delete ecdsaValidatorStorage[msg.sender];
+        emit OwnerDisabled(msg.sender);
     }
 
     function enable(bytes calldata _data) external override {
