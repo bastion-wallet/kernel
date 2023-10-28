@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "src/abstract/KernelStorage.sol";
 
 contract SubExecutor is ReentrancyGuard {
-    event preApproved(address indexed _subscriber, uint256 _amount);
+    event preApproval(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
 
@@ -48,6 +48,13 @@ contract SubExecutor is ReentrancyGuard {
         }
     }
 
+    function getPaymentRecordStorage() internal pure returns (PaymentRecord storage ws) {
+        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.paymentRecord")) - 1);
+        assembly {
+            ws.slot := storagePosition
+        }
+    }
+
     function getPaymentHistoryStorage() internal pure returns (PaymentHistory storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("subscription.paymentHistory")) - 1);
         assembly {
@@ -76,7 +83,7 @@ contract SubExecutor is ReentrancyGuard {
             sub.erc20Token = erc20TokenAddress;
         }
 
-        emit preApproved(msg.sender, _amount);
+        emit preApproval(msg.sender, _amount);
     }
 
     function revokeApproval() external {
@@ -97,6 +104,12 @@ contract SubExecutor is ReentrancyGuard {
     function getPaymentHistory(address _initiator) external view returns (PaymentRecord[] memory) {
         PaymentHistory storage ph = getPaymentHistoryStorage();
         return ph.paymentRecords[_initiator];
+    }
+
+    function updateAllowance(uint256 _amount) external {
+        SubStorage storage sub = getSubStorage();
+        require(msg.sender == sub.initiator, "Only the initiator can update the allowance");
+        sub.amount = _amount;
     }
 
     function processPayment() external nonReentrant {
@@ -121,7 +134,7 @@ contract SubExecutor is ReentrancyGuard {
         if (sub.erc20TokensValid) {
             _processERC20Payment(sub);
         } else {
-            _processEtherPayment(sub);
+            _processNativePayment(sub);
         }
 
         emit paymentProcessed(msg.sender, sub.amount);
@@ -134,7 +147,7 @@ contract SubExecutor is ReentrancyGuard {
         token.transferFrom(msg.sender, sub.payee, sub.amount);
     }
 
-    function _processEtherPayment(SubStorage storage sub) internal {
+    function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
         payable(sub.payee).transfer(sub.amount);
     }

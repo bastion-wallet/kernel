@@ -23,11 +23,11 @@ contract DeployKernel is Script {
         address kernelFactory = address(bytes20(returnData));
         console.log("KernelFactory deployed at: %s", kernelFactory);
 
-        // bytecode = type(ECDSAValidator).creationCode;
-        // (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
-        // require(success, "Failed to deploy ECDSAValidator");
-        // address validator = address(bytes20(returnData));
-        // console.log("ECDSAValidator deployed at: %s", validator);
+        bytecode = type(ECDSAValidator).creationCode;
+        (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
+        require(success, "Failed to deploy ECDSAValidator");
+        address validator = address(bytes20(returnData));
+        console.log("ECDSAValidator deployed at: %s", validator);
 
         address validator = 0x180D6465F921C7E0DEA0040107D342c87455fFF5;
 
