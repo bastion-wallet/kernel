@@ -10,8 +10,10 @@ interface Initiator {
         uint256 _paymentInterval,
         uint256 _paymentLimit,
         address _erc20Token
-    ) external; 
+    ) external;
 
     // Function that calls processPayment from sub executor and initiates a payment
     function initiatePayment() external;
+
+    function removeSubscription(address _subscriber) external;
 }
