@@ -3,34 +3,18 @@ pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import "src/abstract/KernelStorage.sol";
+import "../abstract/KernelStorage.sol";
+import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
     event preApproval(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
+    event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
-    struct SubStorage {
-        uint256 amount;
-        uint256 validUntil;
-        uint256 validAfter;
-        uint256 paymentInterval; // In days
-        uint256 paymentLimit;
-        address payee;
-        address initiator;
-        bool erc20TokensValid;
-        address erc20Token;
-    }
-
-    struct PaymentRecord {
-        uint256 amount;
-        uint256 timestamp;
-        address payee;
-    }
-
-    struct PaymentHistory {
-        mapping(address => PaymentRecord[]) paymentRecords;
-        mapping(address => SubStorage) subscriptions;
+    modifier onlyOwner() {
+        require(msg.sender == getKernelStorage().owner, "Only the owner can call this function");
+        _;
     }
 
     // Function to get the wallet kernel storage
@@ -62,43 +46,92 @@ contract SubExecutor is ReentrancyGuard {
         }
     }
 
-    function preApprove(
-        address _payee,
+    function getSubscriptionsStorage() internal pure returns (Subscriptions storage ws) {
+        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.subscriptions")) - 1);
+        assembly {
+            ws.slot := storagePosition
+        }
+    }
+
+    // Modifier to check if the function is called by the entry point, the contract itself or the owner
+    modifier onlyFromEntryPointOrOwnerOrSelf() {
+        address owner = getKernelStorage().owner;
+        address entryPoint = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
+        require(
+            msg.sender == address(entryPoint) || msg.sender == address(this) || msg.sender == owner,
+            "account: not from entrypoint or owner or self"
+        );
+        _;
+    }
+
+    function createSubscription(
+        address _initiator,
         uint256 _amount,
-        uint256 _paymentInterval,
+        uint256 _interval,
         uint256 _paymentLimit,
-        address erc20TokenAddress
-    ) external {
+        address _erc20Token
+    ) external onlyFromEntryPointOrOwnerOrSelf {
         SubStorage storage sub = getSubStorage();
         sub.amount = _amount;
         sub.validUntil = block.timestamp + 365 days;
         sub.validAfter = block.timestamp;
-        sub.payee = _payee;
-        sub.paymentInterval = _paymentInterval;
+        sub.subscriber = address(this);
+        sub.paymentInterval = _interval * 1 days;
         sub.paymentLimit = _paymentLimit;
-        sub.initiator = msg.sender;
+        sub.initiator = _initiator;
+        sub.erc20Token = _erc20Token;
+        sub.erc20TokensValid = _erc20Token == address(0) ? false : true;
 
-        if (erc20TokenAddress != address(0)) {
-            sub.erc20TokensValid = true;
-            sub.erc20Token = erc20TokenAddress;
-        }
+        Subscriptions storage subs = getSubscriptionsStorage();
+        subs.subscriptions[_initiator] = sub;
 
-        emit preApproval(msg.sender, _amount);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
+
+        emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
 
-    function revokeApproval() external {
-        SubStorage storage sub = getSubStorage();
-        require(msg.sender == sub.initiator, "Only the initiator can revoke the approval");
+    function modifySubscription(
+        address _initiator,
+        uint256 _amount,
+        uint256 _interval,
+        uint256 _paymentLimit,
+        address _erc20Token
+    ) external onlyFromEntryPointOrOwnerOrSelf {
+        Subscriptions storage subs = getSubscriptionsStorage();
+        SubStorage storage sub = subs.subscriptions[_initiator];
 
-        PaymentHistory storage ph = getPaymentHistoryStorage();
-        delete ph.subscriptions[msg.sender];
+        require(sub.initiator == _initiator, "Subscription does not exist");
+        sub.amount = _amount;
+        sub.validUntil = block.timestamp + 365 days;
+        sub.validAfter = block.timestamp;
+        sub.paymentInterval = _interval * 1 days;
+        sub.paymentLimit = _paymentLimit;
+        sub.erc20Token = _erc20Token;
+        sub.erc20TokensValid = _erc20Token == address(0) ? false : true;
 
-        emit revokedApproval(msg.sender);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
+
+        emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
 
-    function getSubscriptions(address _initiator) external view returns (SubStorage memory) {
-        PaymentHistory storage ph = getPaymentHistoryStorage();
-        return ph.subscriptions[_initiator];
+    function revokeSubscription(address _initiator, uint256 _amount, uint256 _interval)
+        external
+        onlyFromEntryPointOrOwnerOrSelf
+    {
+        require(_amount > 0, "Subscription amount is 0");
+        require(_interval > 0, "Payment interval is 0");
+
+        Subscriptions storage subs = getSubscriptionsStorage();
+        delete subs.subscriptions[_initiator];
+
+        Initiator(_initiator).removeSubscription(address(this));
+
+        emit revokedApproval(_initiator);
+    }
+
+    function getSubscription(address _initiator) external view returns (SubStorage memory) {
+        Subscriptions storage subs = getSubscriptionsStorage();
+        return subs.subscriptions[_initiator];
     }
 
     function getPaymentHistory(address _initiator) external view returns (PaymentRecord[] memory) {
@@ -118,7 +151,6 @@ contract SubExecutor is ReentrancyGuard {
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
         require(msg.sender == sub.initiator, "Only the initiator can initiate payments");
-        require(ph.subscriptions[msg.sender].amount != 0, "Subscription does not exist");
 
         //Check when the last payment was done
         PaymentRecord[] storage paymentHistory = ph.paymentRecords[msg.sender];
@@ -128,7 +160,7 @@ contract SubExecutor is ReentrancyGuard {
             "Payment interval not yet reached"
         );
 
-        paymentHistory.push(PaymentRecord(sub.amount, block.timestamp, sub.payee));
+        paymentHistory.push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
 
         //Check whether it's a native payment or ERC20 or ERC721
         if (sub.erc20TokensValid) {
@@ -140,16 +172,26 @@ contract SubExecutor is ReentrancyGuard {
         emit paymentProcessed(msg.sender, sub.amount);
     }
 
+    function getLastPaidTimestamp(address _initiator) external view returns (uint256) {
+        PaymentHistory storage ph = getPaymentHistoryStorage();
+        PaymentRecord[] storage paymentHistory = ph.paymentRecords[_initiator];
+        if (paymentHistory.length == 0) {
+            return 0;
+        }
+        PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
+        return lastPayment.timestamp;
+    }
+
     function _processERC20Payment(SubStorage storage sub) internal {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
-        token.transferFrom(msg.sender, sub.payee, sub.amount);
+        token.transferFrom(msg.sender, sub.subscriber, sub.amount);
     }
 
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
-        payable(sub.payee).transfer(sub.amount);
+        payable(sub.subscriber).transfer(sub.amount);
     }
 
     //Function to remove ERC20tokens from the contract sent by mistake

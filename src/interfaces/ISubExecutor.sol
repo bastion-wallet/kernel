@@ -12,7 +12,7 @@ interface ISubExecutor {
         uint256 validAfter;
         uint256 paymentInterval; // In days
         uint256 paymentLimit;
-        address payee;
+        address subscriber;
         address initiator;
         bool erc20TokensValid;
         address erc20Token;
@@ -32,7 +32,9 @@ interface ISubExecutor {
         address erc20TokenAddress
     ) external;
 
-    function revokeApproval() external;
+    function createSubscription(address _subscriber, uint256 _amount, uint256 _interval) external;
+
+    function revokeSubscription(address _subscriber, uint256 _amount, uint256 _interval) external;
 
     function getSubscriptions(address _subscriber) external view returns (SubStorage memory);
 
@@ -41,4 +43,6 @@ interface ISubExecutor {
     function processPayment() external;
 
     function withdrawERC20Tokens(address _tokenAddress) external;
+
+    function getLastPaidTimestamp(address _initiator) external view returns (uint256);
 }

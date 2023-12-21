@@ -23,6 +23,32 @@ struct WalletKernelStorage {
     mapping(bytes4 => ExecutionDetail) execution; // Mapping of function selectors to execution details
 }
 
+struct SubStorage {
+    uint256 amount;
+    uint256 validUntil;
+    uint256 validAfter;
+    uint256 paymentInterval; // In days
+    uint256 paymentLimit;
+    address subscriber;
+    address initiator;
+    bool erc20TokensValid;
+    address erc20Token;
+}
+
+struct PaymentRecord {
+    uint256 amount;
+    uint256 timestamp;
+    address subscriber;
+}
+
+struct PaymentHistory {
+    mapping(address => PaymentRecord[]) paymentRecords;
+}
+
+struct Subscriptions {
+    mapping(address => SubStorage) subscriptions;
+}
+
 /// @title Kernel Storage Contract
 /// @author taek<leekt216@gmail.com>
 /// @notice This contract serves as the storage module for the Kernel contract.
