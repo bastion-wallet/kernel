@@ -1,4 +1,4 @@
-pragma solidity >=0.8.0 <=0.8.19;
+pragma solidity >=0.8.0;
 
 import "account-abstraction/interfaces/IEntryPoint.sol";
 import "account-abstraction/interfaces/IAccount.sol";

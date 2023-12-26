@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <=0.8.19;
+pragma solidity >=0.8.0;
 
 import "account-abstraction/core/EntryPoint.sol";
 import "forge-std/Test.sol";
