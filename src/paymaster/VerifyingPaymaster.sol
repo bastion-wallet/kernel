@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <=0.8.19;
+pragma solidity >=0.8.0;
 
 /* solhint-disable reason-string */
 
 import "account-abstraction/core/BasePaymaster.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./MetaPaymaster.sol";
+
 
 /**
  * A paymaster that uses external service to decide whether to pay for the UserOp.
@@ -25,11 +27,12 @@ contract Paymaster is BasePaymaster {
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
 
-    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable() {
+    constructor(IEntryPoint _entryPoint, address _verifyingSigner, MetaPaymaster _metaPaymaster) BasePaymaster(_entryPoint) Ownable() {
         require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
         require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
         require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
         verifyingSigner = _verifyingSigner;
+        metaPaymaster = _metaPaymaster;
     }
 
     /**
@@ -82,9 +85,7 @@ contract Paymaster is BasePaymaster {
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        // return ("", _packValidationData(false, validUntil, validAfter));
-        return (abi.encode(userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), validationData);
-
+        return ("", _packValidationData(false, validUntil, validAfter));
     }
 
     function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {

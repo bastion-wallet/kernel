@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <=0.8.19;
+pragma solidity >=0.8.0;
 
 
 import "account-abstraction/interfaces/IEntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "solady/utils/SafeTransferLib.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "solady/src/utils/SafeTransferLib.sol";
 
 /**
  * A meta-paymaster that deposits funds to the 4337 entryPoint on behalf
