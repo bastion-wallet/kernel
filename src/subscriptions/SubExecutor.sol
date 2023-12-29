@@ -85,7 +85,7 @@ contract SubExecutor is ReentrancyGuard {
         Subscriptions storage subs = getSubscriptionsStorage();
         subs.subscriptions[_initiator] = sub;
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
+        Initiator(_initiator).registerSubscription(address(this), _amount, _interval * 1 days, _paymentLimit, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
