@@ -7,6 +7,7 @@ import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
+    // TODO - return active/inactive subscriptions
     event preApproval(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
@@ -71,20 +72,18 @@ contract SubExecutor is ReentrancyGuard {
         uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
-        SubStorage storage sub = getSubStorage();
-        sub.amount = _amount;
-        sub.validUntil = block.timestamp + 365 days;
-        sub.validAfter = block.timestamp;
-        sub.subscriber = address(this);
-        sub.paymentInterval = _interval * 1 days;
-        sub.paymentLimit = _paymentLimit;
-        sub.initiator = _initiator;
-        sub.erc20Token = _erc20Token;
-        sub.erc20TokensValid = _erc20Token == address(0) ? false : true;
-
-        Subscriptions storage subs = getSubscriptionsStorage();
-        subs.subscriptions[_initiator] = sub;
-
+        require(_amount > 0, "Subscription amount is 0");
+        getKernelStorage().subscriptions[_initiator] = SubStorage({
+            amount: _amount,
+            validUntil: block.timestamp + 365 days,
+            validAfter: block.timestamp,
+            paymentInterval: _interval * 1 days,
+            paymentLimit: _paymentLimit,
+            subscriber: address(this),
+            initiator: _initiator,
+            erc20Token: _erc20Token,
+            erc20TokensValid: _erc20Token == address(0) ? false : true
+        });
         Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
@@ -97,17 +96,17 @@ contract SubExecutor is ReentrancyGuard {
         uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
-        Subscriptions storage subs = getSubscriptionsStorage();
-        SubStorage storage sub = subs.subscriptions[_initiator];
-
-        require(sub.initiator == _initiator, "Subscription does not exist");
-        sub.amount = _amount;
-        sub.validUntil = block.timestamp + 365 days;
-        sub.validAfter = block.timestamp;
-        sub.paymentInterval = _interval * 1 days;
-        sub.paymentLimit = _paymentLimit;
-        sub.erc20Token = _erc20Token;
-        sub.erc20TokensValid = _erc20Token == address(0) ? false : true;
+        getKernelStorage().subscriptions[_initiator] = SubStorage({
+            amount: _amount,
+            validUntil: block.timestamp + 365 days,
+            validAfter: block.timestamp,
+            paymentInterval: _interval * 1 days,
+            paymentLimit: _paymentLimit,
+            subscriber: address(this),
+            initiator: _initiator,
+            erc20Token: _erc20Token,
+            erc20TokensValid: _erc20Token == address(0) ? false : true
+        });
 
         Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
 
@@ -121,8 +120,7 @@ contract SubExecutor is ReentrancyGuard {
         require(_amount > 0, "Subscription amount is 0");
         require(_interval > 0, "Payment interval is 0");
 
-        Subscriptions storage subs = getSubscriptionsStorage();
-        delete subs.subscriptions[_initiator];
+        delete getKernelStorage().subscriptions[_initiator];
 
         Initiator(_initiator).removeSubscription(address(this));
 
@@ -130,37 +128,32 @@ contract SubExecutor is ReentrancyGuard {
     }
 
     function getSubscription(address _initiator) external view returns (SubStorage memory) {
-        Subscriptions storage subs = getSubscriptionsStorage();
-        return subs.subscriptions[_initiator];
+        return getKernelStorage().subscriptions[_initiator];
     }
 
     function getPaymentHistory(address _initiator) external view returns (PaymentRecord[] memory) {
-        PaymentHistory storage ph = getPaymentHistoryStorage();
-        return ph.paymentRecords[_initiator];
+        return getKernelStorage().paymentRecords[_initiator];
     }
 
     function updateAllowance(uint256 _amount) external {
-        SubStorage storage sub = getSubStorage();
-        require(msg.sender == sub.initiator, "Only the initiator can update the allowance");
-        sub.amount = _amount;
+        getKernelStorage().subscriptions[msg.sender].paymentLimit = _amount;
     }
 
     function processPayment() external nonReentrant {
-        SubStorage storage sub = getSubStorage();
-        PaymentHistory storage ph = getPaymentHistoryStorage();
+        SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
         require(block.timestamp <= sub.validUntil, "Subscription expired");
         require(msg.sender == sub.initiator, "Only the initiator can initiate payments");
 
         //Check when the last payment was done
-        PaymentRecord[] storage paymentHistory = ph.paymentRecords[msg.sender];
+        PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[msg.sender];
         PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
         require(
             paymentHistory.length == 0 || block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
             "Payment interval not yet reached"
         );
 
-        paymentHistory.push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
+        getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
 
         //Check whether it's a native payment or ERC20 or ERC721
         if (sub.erc20TokensValid) {
@@ -173,8 +166,7 @@ contract SubExecutor is ReentrancyGuard {
     }
 
     function getLastPaidTimestamp(address _initiator) external view returns (uint256) {
-        PaymentHistory storage ph = getPaymentHistoryStorage();
-        PaymentRecord[] storage paymentHistory = ph.paymentRecords[_initiator];
+        PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[_initiator];
         if (paymentHistory.length == 0) {
             return 0;
         }

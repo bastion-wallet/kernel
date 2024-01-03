@@ -21,6 +21,8 @@ struct WalletKernelStorage {
     address owner;
     IKernelValidator defaultValidator; // Default validator for the wallet
     mapping(bytes4 => ExecutionDetail) execution; // Mapping of function selectors to execution details
+    mapping(address => SubStorage) subscriptions;
+    mapping(address => PaymentRecord[]) paymentRecords;
 }
 
 struct SubStorage {
