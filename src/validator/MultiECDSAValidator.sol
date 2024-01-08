@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import "./IValidator.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
@@ -49,7 +49,7 @@ contract MultiECDSAValidator is IKernelValidator {
         return 0;
     }
 
-    function validateSignature(bytes32 hash, bytes calldata signature) public view override returns (uint256) {
+    function validateSignature(bytes32 hash, bytes calldata signature) external view override returns (uint256) {
         address signer = ECDSA.recover(hash, signature);
         if(isOwner[signer][msg.sender]) {
             return 0;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 // Importing necessary interfaces
 import "account-abstraction/interfaces/IEntryPoint.sol";
@@ -67,7 +67,7 @@ contract KernelStorage {
 
     // Function to get the wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
+        bytes32 storagePosition = bytes32(uint256(keccak256("bastion.kernel")) - 1);
         assembly {
             ws.slot := storagePosition
         }
