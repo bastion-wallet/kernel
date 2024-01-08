@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import "src/factory/KernelFactory.sol";
 import "src/factory/TempKernel.sol";
@@ -23,17 +23,37 @@ contract KernelTest is Test {
     MultiECDSAValidator validator;
     address owner;
     uint256 ownerKey;
+    address owner2;
+    uint256 owner2Key;
+    address owner3;
+    uint256 owner3Key;
+    address newSignatory;
+    uint256 newSignatoryKey;
     address payable beneficiary;
 
     function setUp() public {
         (owner, ownerKey) = makeAddrAndKey("owner");
+        (owner2, owner2Key) = makeAddrAndKey("owner2");
+        (owner3, owner3Key) = makeAddrAndKey("owner3");
+        (newSignatory, newSignatoryKey) = makeAddrAndKey("newSignatory");
         entryPoint = new EntryPoint();
         factory = new KernelFactory(entryPoint);
 
         validator = new MultiECDSAValidator();
-        ecdsaFactory = new MultiECDSAKernelFactory(factory, validator, entryPoint);
-        address[] memory owners = new address[](1);
-        owners[0] = owner;
+        address[] memory owners = new address[](3);
+        owners[0]=owner;
+        owners[1]=owner2;
+        owners[2]=owner3;
+
+        ecdsaFactory = new MultiECDSAKernelFactory(factory, validator, entryPoint, owners);
+        
+        vm.prank(owner);
+        ecdsaFactory.approveChange();
+        
+        vm.prank(owner2);
+        ecdsaFactory.approveChange();
+
+        vm.prank(owner);
         ecdsaFactory.setOwners(owners);
 
         kernel = Kernel(payable(ecdsaFactory.createAccount(0)));
@@ -45,6 +65,65 @@ contract KernelTest is Test {
         vm.expectRevert();
         kernel.initialize(validator, abi.encodePacked(owner));
     }
+
+    function test_add_signatory() external {
+        ecdsaFactory.addSignatory(newSignatory);
+        assertEq(ecdsaFactory.isSignatory(newSignatory), true);
+        assertEq(ecdsaFactory.numSignatories(), 4);
+    }
+
+    function test_remove_signatory() external {
+        ecdsaFactory.addSignatory(newSignatory);
+        assertEq(ecdsaFactory.numSignatories(), 4);
+
+        ecdsaFactory.removeSignatory(newSignatory);
+        assertEq(ecdsaFactory.isSignatory(newSignatory), false);
+        assertEq(ecdsaFactory.numSignatories(), 3);
+    }
+
+    function test_approve_change() external {
+        vm.prank(owner);
+        ecdsaFactory.approveChange();
+        assertEq(ecdsaFactory.approvals(owner), true);
+        assertEq(ecdsaFactory.numApprovals(), 1);
+
+        vm.prank(owner2);
+        ecdsaFactory.approveChange();
+        assertEq(ecdsaFactory.approvals(owner2), true);
+        assertEq(ecdsaFactory.numApprovals(), 2);
+    }
+
+    function test_revoke_approval() external {
+        vm.prank(owner);
+        ecdsaFactory.approveChange();
+        vm.prank(owner2);
+        ecdsaFactory.approveChange();
+        assertEq(ecdsaFactory.numApprovals(), 2);
+
+        vm.prank(owner);
+        ecdsaFactory.revokeApproval();
+        assertEq(ecdsaFactory.numApprovals(), 1);
+        vm.prank(owner2);
+        ecdsaFactory.revokeApproval();
+        assertEq(ecdsaFactory.numApprovals(), 0);
+
+    }
+
+    function test_set_owners() external {
+        address[] memory newOwners = new address[](2);
+        newOwners[0]=owner;
+        newOwners[1]=owner2;
+        vm.expectRevert();
+        ecdsaFactory.setOwners(newOwners);
+
+        vm.prank(owner2);
+        ecdsaFactory.approveChange();
+        vm.prank(owner3);
+        ecdsaFactory.approveChange();
+        vm.prank(owner2);
+        ecdsaFactory.setOwners(newOwners);
+    }
+
 
     function test_validate_signature() external {
         Kernel kernel2 = Kernel(payable(address(ecdsaFactory.createAccount(1))));

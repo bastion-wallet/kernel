@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 contract EIP1967Proxy {
     /**
@@ -8,9 +8,15 @@ contract EIP1967Proxy {
      * validated in the constructor.
      */
     bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-
+    
+    /**
+     * @dev An upgrade function sees `msg.value > 0` that may be lost.
+     */
+    error ERC1967NonPayable();
+    
     constructor(address _logic, bytes memory _data) payable {
         require(_logic != address(0), "EIP1967Proxy: implementation is the zero address");
+        require(_logic.code.length > 0, "EIP1967Proxy: implementation is the EOA");
         bytes32 slot = _IMPLEMENTATION_SLOT;
         assembly {
             sstore(slot, _logic)
@@ -18,6 +24,8 @@ contract EIP1967Proxy {
         if (_data.length > 0) {
             (bool success,) = _logic.delegatecall(_data);
             require(success, "EIP1967Proxy: constructor call failed");
+        } else {
+            _checkNonPayable();
         }
     }
 
@@ -49,4 +57,15 @@ contract EIP1967Proxy {
             impl := sload(slot)
         }
     }
+
+    /**
+     * @dev Reverts if `msg.value` is not zero. It can be used to avoid `msg.value` stuck in the contract
+     * if an upgrade doesn't perform an initialization call.
+     */
+    function _checkNonPayable() private {
+        if (msg.value > 0) {
+            revert ERC1967NonPayable();
+        }
+    }
+    
 }

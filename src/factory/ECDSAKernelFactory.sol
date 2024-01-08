@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity >=0.8.0;
 
 import "./KernelFactory.sol";
 import "src/validator/ECDSAValidator.sol";
@@ -20,7 +20,7 @@ contract ECDSAKernelFactory {
         proxy = singletonFactory.createAccount(validator, data, _index);
     }
 
-    function getAccountAddress(address _owner, uint256 _index) public view returns (address) {
+    function getAccountAddress(address _owner, uint256 _index) external view returns (address) {
         bytes memory data = abi.encodePacked(_owner);
         return singletonFactory.getAccountAddress(validator, data, _index);
     }
