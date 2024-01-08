@@ -1,38 +1,27 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0;
-
-/* solhint-disable reason-string */
 
 import "account-abstraction/core/BasePaymaster.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./MetaPaymaster.sol";
-
+import "./BaseFundedPaymaster.sol";
 
 /**
  * A paymaster that uses external service to decide whether to pay for the UserOp.
  * The paymaster trusts an external signer to sign the transaction.
  * The calling user must pass the UserOp to that external signer first, which performs
- * whatever off-chain verification before signing the UserOp.
- * Note that this signature is NOT a replacement for the account-specific signature:
- * - the paymaster checks a signature to agree to PAY for GAS.
- * - the account checks a signature to prove identity and account ownership.
+ * whatever off-chain verification before signing the UserOp.\
+ * Actual funding is provided by a meta-paymaster.
  */
-contract Paymaster is BasePaymaster {
+contract FundedPaymaster is BaseFundedPaymaster {
     using UserOperationLib for UserOperation;
 
     address public immutable verifyingSigner;
-    MetaPaymaster public immutable metaPaymaster;
 
-    uint256 private constant POST_OP_OVERHEAD = 34982;
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
 
-    constructor(IEntryPoint _entryPoint, address _verifyingSigner, MetaPaymaster _metaPaymaster) BasePaymaster(_entryPoint) Ownable() {
-        require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
-        require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
-        require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
+    constructor(IEntryPoint _entryPoint, MetaPaymaster _metaPaymaster, address _verifyingSigner) BaseFundedPaymaster(_entryPoint, _metaPaymaster) {
         verifyingSigner = _verifyingSigner;
-        metaPaymaster = _metaPaymaster;
     }
 
     /**
@@ -71,8 +60,8 @@ contract Paymaster is BasePaymaster {
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 /*requiredPreFund*/)
-    internal view override returns (bytes memory context, uint256 validationData) {
+    function __validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 /*requiredPreFund*/)
+    internal override view returns (uint256) {
         (uint48 validUntil, uint48 validAfter, bytes calldata signature) = parsePaymasterAndData(userOp.paymasterAndData);
         // Only support 65-byte signatures, to avoid potential replay attacks.
         require(signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
@@ -80,24 +69,12 @@ contract Paymaster is BasePaymaster {
 
         // don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != ECDSA.recover(hash, signature)) {
-            return ("", _packValidationData(true, validUntil, validAfter));
+            return _packValidationData(true, validUntil, validAfter);
         }
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return ("", _packValidationData(false, validUntil, validAfter));
-    }
-
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
-        if (mode != PostOpMode.postOpReverted) {
-            (uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi.decode(context, (uint256, uint256));
-            uint256 gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-            metaPaymaster.fund(address(this), actualGasCost + POST_OP_OVERHEAD*gasPrice);
-        }
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
+        return _packValidationData(false, validUntil, validAfter);
     }
 
     function parsePaymasterAndData(bytes calldata paymasterAndData)
@@ -106,21 +83,9 @@ contract Paymaster is BasePaymaster {
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 
-    function renounceOwnership() public override view onlyOwner {
-        revert("Paymaster: renouncing ownership is not allowed");
-    }
-
-    function transferOwnership(address newOwner) public override onlyOwner {
-        require(newOwner != address(0), "Paymaster: owner cannot be address(0)");
-        require(newOwner != verifyingSigner, "Paymaster: owner cannot be the verifyingSigner");
-        _transferOwnership(newOwner);
-    }
-
     receive() external payable {
         // use address(this).balance rather than msg.value in case of force-send
         (bool callSuccess, ) = payable(address(entryPoint)).call{value: address(this).balance}("");
         require(callSuccess, "Deposit failed");
     }
-
-
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
-
 import "account-abstraction/interfaces/IEntryPoint.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "solady/src/utils/SafeTransferLib.sol";
@@ -76,11 +75,7 @@ contract MetaPaymaster is OwnableUpgradeable {
      * @param amount The amount to set the balance to.
      */
     function setBalance(address account, uint256 amount) public onlyOwner {
-        if (amount > balanceOf[account]) {
-            total += amount - balanceOf[account];
-        } else {
-            total -= balanceOf[account] - amount;
-        }
+        total = total + amount - balanceOf[account];
         balanceOf[account] = amount;
     }
 
@@ -91,6 +86,14 @@ contract MetaPaymaster is OwnableUpgradeable {
      */
     function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount) public onlyOwner {
         SafeTransferLib.safeTransferETH(withdrawAddress, withdrawAmount);
+    }
+
+    /**
+     * @notice Sets the entrypoint.
+     * @param _entryPoint New entrypoint
+     */
+    function setEntryPoint(IEntryPoint _entryPoint) public onlyOwner {
+        entryPoint = _entryPoint;
     }
 
     receive() external payable {}
