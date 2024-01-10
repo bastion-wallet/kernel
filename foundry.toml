@@ -3,7 +3,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 remappings = ['account-abstraction/=lib/account-abstraction/contracts/']
-solc_version = '0.8.19'
+solc_version = '0.8.20'
 bytecode_hash = "none"
 cbor_metadata = false
 optimize = true
@@ -12,12 +12,13 @@ runs = 1000000
 [rpc_endpoints]
 mumbai = "${MUMBAI_RPC_ENDPOINT}"
 arbitrumGoerli = "${ARBITRUM_GOERLI_RPC_ENDPOINT}"
+baseGoerli = "${https://base-goerli.public.blastapi.io}"
 scroll = "${SCROLL_RPC_ENDPOINT}"
 
 [etherscan]
 mumbai = { key = "${MUMBAI_API_KEY}" }
 arbitrumGoerli = { key = "${ARBITRUM_GOERLI_API_KEY}" }
 scroll = { key = "${SCROLL_API_KEY}" }
-
+baseGoerli = { key = "${BASE_API_KEY}"}
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

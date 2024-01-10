@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts/contracts/utils/Create2.sol";
 import "./EIP1967Proxy.sol";
@@ -44,7 +44,7 @@ contract KernelFactory {
     }
 
     function getAccountAddress(IKernelValidator _validator, bytes calldata _data, uint256 _index)
-        public
+        external
         view
         returns (address)
     {

@@ -41,14 +41,14 @@ contract SubExecutor is ReentrancyGuard {
         address _initiator,
         uint256 _amount,
         uint256 _interval, // in seconds
-        uint256 _validUntil,
+        uint256 _validUntil, //timestamp
         uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         require(_amount > 0, "Subscription amount is 0");
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
-            validUntil: _validUntil * 1 days,
+            validUntil: _validUntil,
             validAfter: block.timestamp,
             paymentInterval: _interval,
             paymentLimit: _paymentLimit,
@@ -57,7 +57,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _paymentLimit, _erc20Token);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _paymentLimit, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -72,7 +72,7 @@ contract SubExecutor is ReentrancyGuard {
     ) external onlyFromEntryPointOrOwnerOrSelf {
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
-            validUntil: _validUntil * 1 days,
+            validUntil: _validUntil,
             validAfter: block.timestamp,
             paymentInterval: _interval,
             paymentLimit: _paymentLimit,
@@ -82,7 +82,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _paymentLimit, _erc20Token);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _paymentLimit, _erc20Token);
 
         emit subctionModified(msg.sender, _initiator, _amount);
     }
