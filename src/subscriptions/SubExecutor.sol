@@ -113,13 +113,7 @@ contract SubExecutor is ReentrancyGuard {
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
 
-    function revokeSubscription(address _initiator, uint256 _amount, uint256 _interval)
-        external
-        onlyFromEntryPointOrOwnerOrSelf
-    {
-        require(_amount > 0, "Subscription amount is 0");
-        require(_interval > 0, "Payment interval is 0");
-
+    function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
         delete getKernelStorage().subscriptions[_initiator];
 
         Initiator(_initiator).removeSubscription(address(this));

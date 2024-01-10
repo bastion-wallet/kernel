@@ -7,7 +7,9 @@ import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/ISubExecutor.sol";
 
 contract Initiator is Ownable, ReentrancyGuard {
-    ISubExecutor.SubStorage[] public subscriptions;
+    // TODO - return active/inactive subscriptions
+    mapping(address => ISubExecutor.SubStorage[]) public subscriptionsBySubscriber;
+    address[] public subscribers;
 
     function registerSubscription(
         address _subscriber,
@@ -32,11 +34,12 @@ contract Initiator is Ownable, ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true,
             erc20Token: _erc20Token
         });
-        subscriptions.push(sub);
+        subscriptionsBySubscriber[_subscriber].push(sub);
     }
 
     function removeSubscription(address _subscriber) public {
         require(msg.sender == _subscriber, "Only the subscriber can remove a subscription");
+        ISubExecutor.SubStorage[] storage subscriptions = subscriptionsBySubscriber[_subscriber];
         for (uint256 i = 0; i < subscriptions.length; i++) {
             if (subscriptions[i].subscriber == _subscriber) {
                 delete subscriptions[i];
@@ -44,13 +47,15 @@ contract Initiator is Ownable, ReentrancyGuard {
         }
     }
 
-    function getSubscriptions() public view returns (ISubExecutor.SubStorage[] memory) {
+    function getSubscriptions(address _subscriber) public view returns (ISubExecutor.SubStorage[] memory) {
+        ISubExecutor.SubStorage[] memory subscriptions = subscriptionsBySubscriber[_subscriber];
         return subscriptions;
     }
 
     // Function that calls processPayment from sub executor and initiates a payment
     function initiatePayment() public nonReentrant {
-        for (uint256 i = 0; i < subscriptions.length; i++) {
+        for (uint256 i = 0; i < subscribers.length; i++) {
+            ISubExecutor.SubStorage[] storage subscriptions = subscriptionsBySubscriber[subscribers[i]];
             require(subscriptions[i].validUntil > block.timestamp, "Subscription is not active");
             require(subscriptions[i].validAfter < block.timestamp, "Subscription is not active");
             require(subscriptions[i].amount > 0, "Subscription amount is 0");
