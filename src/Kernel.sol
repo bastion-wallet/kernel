@@ -29,7 +29,7 @@ contract Kernel is IAccount, EIP712, Compatibility, KernelStorage {
  
     /// @notice Accepts incoming Ether transactions and calls from the EntryPoint contract
     /// @dev This function will delegate any call to the appropriate executor based on the function signature.
-    fallback() external payable onlyFromEntryPoint{
+    fallback() external payable {
         bytes4 sig = msg.sig;
         address executor = getKernelStorage().execution[sig].executor;
         assembly {

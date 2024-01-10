@@ -21,6 +21,8 @@ struct WalletKernelStorage {
     address owner;
     IKernelValidator defaultValidator; // Default validator for the wallet
     mapping(bytes4 => ExecutionDetail) execution; // Mapping of function selectors to execution details
+    mapping(address => SubStorage) subscriptions;
+    mapping(address => PaymentRecord[]) paymentRecords;
 }
 
 struct SubStorage {
@@ -161,6 +163,33 @@ contract KernelStorage {
         });
         _validator.enable(_enableData);
         emit ExecutionChanged(_selector, _executor, address(_validator));
+    }
+
+    /// @notice Changes the execution details for a mulitple function selectors belonging to an Executor
+    /// @dev This function can only be called from the EntryPoint contract, the contract owner, or itself
+    /// @param _selectors The selectors array of the functions for which execution details are being set
+    /// @param _executor The executor to be associated with the function selector
+    /// @param _validator The validator contract that will be responsible for validating operations associated with this function selector
+    /// @param _validUntil The timestamp until which the execution details are valid
+    /// @param _validAfter The timestamp after which the execution details are valid
+    function setExecutionMultiSelector(
+        bytes4[] memory _selectors,
+        address _executor,
+        IKernelValidator _validator,
+        uint48 _validUntil,
+        uint48 _validAfter,
+        bytes calldata _enableData
+    ) external onlyFromEntryPointOrOwnerOrSelf {
+        for(uint256 i=0; i<_selectors.length; i++){
+            getKernelStorage().execution[_selectors[i]] = ExecutionDetail({
+                executor: _executor,
+                validator: _validator,
+                validUntil: _validUntil,
+                validAfter: _validAfter
+            });
+            _validator.enable(_enableData);
+            emit ExecutionChanged(_selectors[i], _executor, address(_validator));
+        }
     }
 
     function setDefaultValidator(IKernelValidator _defaultValidator, bytes calldata _data)
