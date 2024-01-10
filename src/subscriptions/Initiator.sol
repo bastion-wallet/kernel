@@ -13,7 +13,6 @@ contract Initiator is Ownable, ReentrancyGuard {
     function registerSubscription(
         address _subscriber,
         uint256 _amount,
-        uint256 _validUntil,
         uint256 _paymentInterval,
         uint256 _paymentLimit,
         address _erc20Token
@@ -25,7 +24,7 @@ contract Initiator is Ownable, ReentrancyGuard {
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
-            validUntil: _validUntil,
+            validUntil: block.timestamp + _paymentInterval,
             validAfter: block.timestamp,
             paymentInterval: _paymentInterval,
             paymentLimit: _paymentLimit,

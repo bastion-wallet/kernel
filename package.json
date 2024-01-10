@@ -1,6 +1,6 @@
 {
-  "name": "@bastionapp/contracts",
-  "description": "Bastion Account Abstraction (EIP 4337) contracts",
+  "name": "@zerodevapp/contracts",
+  "description": "ZeroDev Account Abstraction (EIP 4337) contracts",
   "main": "./dist/index.js",
   "version": "4.0.0-beta.14",
   "scripts": {

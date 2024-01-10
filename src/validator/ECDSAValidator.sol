@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.0;
 
 import "./IValidator.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
@@ -10,16 +10,13 @@ struct ECDSAValidatorStorage {
     address owner;
 }
 
-
 contract ECDSAValidator is IKernelValidator {
     event OwnerChanged(address indexed kernel, address indexed oldOwner, address indexed newOwner);
-    event OwnerDisabled(address indexed disableOwner);
 
     mapping(address => ECDSAValidatorStorage) public ecdsaValidatorStorage;
 
     function disable(bytes calldata) external override {
         delete ecdsaValidatorStorage[msg.sender];
-        emit OwnerDisabled(msg.sender);
     }
 
     function enable(bytes calldata _data) external override {
@@ -47,7 +44,7 @@ contract ECDSAValidator is IKernelValidator {
         }
     }
 
-    function validateSignature(bytes32 hash, bytes calldata signature) external view override returns (uint256) {
+    function validateSignature(bytes32 hash, bytes calldata signature) public view override returns (uint256) {
         address owner = ecdsaValidatorStorage[msg.sender].owner;
         if( owner == ECDSA.recover(hash, signature) ) {
             return 0;
