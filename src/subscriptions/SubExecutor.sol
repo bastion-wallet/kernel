@@ -40,25 +40,24 @@ contract SubExecutor is ReentrancyGuard {
     function createSubscription(
         address _initiator,
         uint256 _amount,
-        uint256 _interval,
+        uint256 _interval, // in seconds
+        uint256 _validUntil,
         uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         require(_amount > 0, "Subscription amount is 0");
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
-            validUntil: block.timestamp + 365 days,
+            validUntil: _validUntil * 1 days,
             validAfter: block.timestamp,
-            paymentInterval: _interval * 1 days,
+            paymentInterval: _interval,
             paymentLimit: _paymentLimit,
             subscriber: address(this),
             initiator: _initiator,
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(
-            address(this), _amount, _interval * 1 days, _paymentLimit, _erc20Token
-        );
+        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _paymentLimit, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -67,14 +66,15 @@ contract SubExecutor is ReentrancyGuard {
         address _initiator,
         uint256 _amount,
         uint256 _interval,
+        uint256 _validUntil,
         uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
-            validUntil: block.timestamp + 365 days,
+            validUntil: _validUntil * 1 days,
             validAfter: block.timestamp,
-            paymentInterval: _interval * 1 days,
+            paymentInterval: _interval,
             paymentLimit: _paymentLimit,
             subscriber: address(this),
             initiator: _initiator,
@@ -82,9 +82,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(
-            address(this), _amount, _interval * 1 days, _paymentLimit, _erc20Token
-        );
+        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _paymentLimit, _erc20Token);
 
         emit subctionModified(msg.sender, _initiator, _amount);
     }
