@@ -7,11 +7,11 @@ import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
-    // TODO - return active/inactive subscriptions
     event preApproval(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
+    event subctionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
     modifier onlyOwner() {
         require(msg.sender == getKernelStorage().owner, "Only the owner can call this function");
@@ -21,34 +21,6 @@ contract SubExecutor is ReentrancyGuard {
     // Function to get the wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
-        assembly {
-            ws.slot := storagePosition
-        }
-    }
-
-    function getSubStorage() internal pure returns (SubStorage storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.storage")) - 1);
-        assembly {
-            ws.slot := storagePosition
-        }
-    }
-
-    function getPaymentRecordStorage() internal pure returns (PaymentRecord storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.paymentRecord")) - 1);
-        assembly {
-            ws.slot := storagePosition
-        }
-    }
-
-    function getPaymentHistoryStorage() internal pure returns (PaymentHistory storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.paymentHistory")) - 1);
-        assembly {
-            ws.slot := storagePosition
-        }
-    }
-
-    function getSubscriptionsStorage() internal pure returns (Subscriptions storage ws) {
-        bytes32 storagePosition = bytes32(uint256(keccak256("subscription.subscriptions")) - 1);
         assembly {
             ws.slot := storagePosition
         }
@@ -84,7 +56,9 @@ contract SubExecutor is ReentrancyGuard {
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
+        Initiator(_initiator).registerSubscription(
+            address(this), _amount, _interval * 1 days, _paymentLimit, _erc20Token
+        );
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -108,16 +82,16 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _interval, _amount, address(0));
+        Initiator(_initiator).registerSubscription(
+            address(this), _amount, _interval * 1 days, _paymentLimit, _erc20Token
+        );
 
-        emit subscriptionCreated(msg.sender, _initiator, _amount);
+        emit subctionModified(msg.sender, _initiator, _amount);
     }
 
     function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
         delete getKernelStorage().subscriptions[_initiator];
-
         Initiator(_initiator).removeSubscription(address(this));
-
         emit revokedApproval(_initiator);
     }
 
@@ -129,8 +103,8 @@ contract SubExecutor is ReentrancyGuard {
         return getKernelStorage().paymentRecords[_initiator];
     }
 
-    function updateAllowance(uint256 _amount) external {
-        getKernelStorage().subscriptions[msg.sender].paymentLimit = _amount;
+    function updateAllowance(uint256 _amount, address _initiator) external {
+        getKernelStorage().subscriptions[_initiator].paymentLimit = _amount;
     }
 
     function processPayment() external nonReentrant {
@@ -172,11 +146,13 @@ contract SubExecutor is ReentrancyGuard {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
+        sub.paymentLimit -= sub.amount;
         token.transferFrom(msg.sender, sub.subscriber, sub.amount);
     }
 
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
+        sub.paymentLimit -= sub.amount;
         payable(sub.subscriber).transfer(sub.amount);
     }
 
