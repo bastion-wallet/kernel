@@ -60,7 +60,6 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
         require(subscription.paymentLimit > 0, "Payment limit is 0");
-        require(subscription.erc20TokensValid, "ERC20 tokens are not valid");
 
         uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
         if (lastPaid != 0) {

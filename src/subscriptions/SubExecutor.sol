@@ -11,7 +11,7 @@ contract SubExecutor is ReentrancyGuard {
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
-    event subctionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
+    event subscriptionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
     modifier onlyOwner() {
         require(msg.sender == getKernelStorage().owner, "Only the owner can call this function");
@@ -84,7 +84,7 @@ contract SubExecutor is ReentrancyGuard {
 
         Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _paymentLimit, _erc20Token);
 
-        emit subctionModified(msg.sender, _initiator, _amount);
+        emit subscriptionModified(msg.sender, _initiator, _amount);
     }
 
     function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
@@ -113,11 +113,18 @@ contract SubExecutor is ReentrancyGuard {
 
         //Check when the last payment was done
         PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[msg.sender];
-        PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
-        require(
-            paymentHistory.length == 0 || block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
-            "Payment interval not yet reached"
-        );
+        // PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
+        // require(
+        //     paymentHistory.length == 0 || block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
+        //     "Payment interval not yet reached"
+        // );
+        if(paymentHistory.length > 0){
+            PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
+            require(
+                block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
+                "Payment interval not yet reached"
+            );
+        }
 
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
 
