@@ -59,7 +59,6 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
         require(subscription.paymentLimit > 0, "Payment limit is 0");
-        require(subscription.erc20TokensValid, "ERC20 tokens are not valid");
 
         uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
         if (lastPaid != 0) {
@@ -67,5 +66,14 @@ contract Initiator is Ownable, ReentrancyGuard {
         }
 
         ISubExecutor(subscription.subscriber).processPayment();
+    }
+
+    function withdrawETH() public onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    function withdrawERC20(address _token) public onlyOwner {
+        IERC20 token = IERC20(_token);
+        token.transfer(owner(), token.balanceOf(address(this)));
     }
 }

@@ -7,7 +7,6 @@ import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
-    event preApproval(address indexed _subscriber, uint256 _amount);
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
@@ -145,19 +144,12 @@ contract SubExecutor is ReentrancyGuard {
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
         sub.paymentLimit -= sub.amount;
-        token.transferFrom(msg.sender, sub.subscriber, sub.amount);
+        token.transferFrom(msg.sender, sub.initiator, sub.amount);
     }
 
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
         sub.paymentLimit -= sub.amount;
-        payable(sub.subscriber).transfer(sub.amount);
-    }
-
-    //Function to remove ERC20tokens from the contract sent by mistake
-    function withdrawERC20Tokens(address _tokenAddress) external {
-        IERC20 token = IERC20(_tokenAddress);
-        //Check the balance of the caller and return the tokens
-        token.transfer(msg.sender, token.balanceOf(msg.sender));
+        payable(sub.initiator).transfer(sub.amount);
     }
 }
