@@ -30,7 +30,6 @@ struct SubStorage {
     uint256 validUntil;
     uint256 validAfter;
     uint256 paymentInterval; // In days
-    uint256 paymentLimit;
     address subscriber;
     address initiator;
     bool erc20TokensValid;
@@ -165,7 +164,6 @@ contract KernelStorage {
         emit ExecutionChanged(_selector, _executor, address(_validator));
     }
 
-
     /// @notice Changes the execution details for a mulitple function selectors belonging to an Executor
     /// @dev This function can only be called from the EntryPoint contract, the contract owner, or itself
     /// @param _selectors The selectors array of the functions for which execution details are being set
@@ -181,7 +179,7 @@ contract KernelStorage {
         uint48 _validAfter,
         bytes calldata _enableData
     ) external onlyFromEntryPointOrOwnerOrSelf {
-        for(uint256 i=0; i<_selectors.length; i++){
+        for (uint256 i = 0; i < _selectors.length; i++) {
             getKernelStorage().execution[_selectors[i]] = ExecutionDetail({
                 executor: _executor,
                 validator: _validator,
@@ -192,7 +190,6 @@ contract KernelStorage {
             emit ExecutionChanged(_selectors[i], _executor, address(_validator));
         }
     }
-
 
     function setDefaultValidator(IKernelValidator _defaultValidator, bytes calldata _data)
         external

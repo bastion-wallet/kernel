@@ -41,7 +41,6 @@ contract SubExecutor is ReentrancyGuard {
         uint256 _amount,
         uint256 _interval, // in seconds
         uint256 _validUntil, //timestamp
-        uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         require(_amount > 0, "Subscription amount is 0");
@@ -50,13 +49,12 @@ contract SubExecutor is ReentrancyGuard {
             validUntil: _validUntil,
             validAfter: block.timestamp,
             paymentInterval: _interval,
-            paymentLimit: _paymentLimit,
             subscriber: address(this),
             initiator: _initiator,
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _paymentLimit, _erc20Token);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -66,7 +64,6 @@ contract SubExecutor is ReentrancyGuard {
         uint256 _amount,
         uint256 _interval,
         uint256 _validUntil,
-        uint256 _paymentLimit,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         getKernelStorage().subscriptions[_initiator] = SubStorage({
@@ -74,14 +71,13 @@ contract SubExecutor is ReentrancyGuard {
             validUntil: _validUntil,
             validAfter: block.timestamp,
             paymentInterval: _interval,
-            paymentLimit: _paymentLimit,
             subscriber: address(this),
             initiator: _initiator,
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _paymentLimit, _erc20Token);
+        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }
@@ -100,9 +96,9 @@ contract SubExecutor is ReentrancyGuard {
         return getKernelStorage().paymentRecords[_initiator];
     }
 
-    function updateAllowance(uint256 _amount, address _initiator) external {
-        getKernelStorage().subscriptions[_initiator].paymentLimit = _amount;
-    }
+    // function updateAllowance(uint256 _amount, address _initiator) external {
+    //     getKernelStorage().subscriptions[_initiator].paymentLimit = _amount;
+    // }
 
     function processPayment() external nonReentrant {
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
@@ -112,17 +108,9 @@ contract SubExecutor is ReentrancyGuard {
 
         //Check when the last payment was done
         PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[msg.sender];
-        // PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
-        // require(
-        //     paymentHistory.length == 0 || block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
-        //     "Payment interval not yet reached"
-        // );
-        if(paymentHistory.length > 0){
+        if (paymentHistory.length > 0) {
             PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
-            require(
-                block.timestamp >= lastPayment.timestamp + sub.paymentInterval,
-                "Payment interval not yet reached"
-            );
+            require(block.timestamp >= lastPayment.timestamp + sub.paymentInterval, "Payment interval not yet reached");
         }
 
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
@@ -150,13 +138,11 @@ contract SubExecutor is ReentrancyGuard {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
-        sub.paymentLimit -= sub.amount;
-        token.transferFrom(msg.sender, sub.initiator, sub.amount);
+        token.transferFrom(address(this), sub.initiator, sub.amount);
     }
 
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
-        sub.paymentLimit -= sub.amount;
         payable(sub.initiator).transfer(sub.amount);
     }
 }

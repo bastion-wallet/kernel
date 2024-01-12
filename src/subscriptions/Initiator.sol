@@ -15,12 +15,10 @@ contract Initiator is Ownable, ReentrancyGuard {
         uint256 _amount,
         uint256 _validUntil,
         uint256 _paymentInterval,
-        uint256 _paymentLimit,
         address _erc20Token
     ) public {
         require(_amount > 0, "Subscription amount is 0");
         require(_paymentInterval > 0, "Payment interval is 0");
-        require(_paymentLimit > 0, "Payment limit is 0");
         require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
@@ -28,7 +26,6 @@ contract Initiator is Ownable, ReentrancyGuard {
             validUntil: _validUntil,
             validAfter: block.timestamp,
             paymentInterval: _paymentInterval,
-            paymentLimit: _paymentLimit,
             subscriber: _subscriber,
             initiator: address(this),
             erc20TokensValid: _erc20Token == address(0) ? false : true,
@@ -59,7 +56,6 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.validAfter < block.timestamp, "Subscription is not active");
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
-        require(subscription.paymentLimit > 0, "Payment limit is 0");
 
         uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
         if (lastPaid != 0) {

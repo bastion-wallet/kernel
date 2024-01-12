@@ -9,7 +9,6 @@ interface Initiator {
         uint256 _amount,
         uint256 _validUntil,
         uint256 _paymentInterval,
-        uint256 _paymentLimit,
         address _erc20Token
     ) external;
 
