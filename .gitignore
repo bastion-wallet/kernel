@@ -19,6 +19,7 @@ docs/
 coverage/
 node_modules
 .env
+.deps
 coverage
 coverage.json
 typechain

@@ -23,11 +23,11 @@ contract DeployKernel is Script {
         address kernelFactory = address(bytes20(returnData));
         console.log("KernelFactory deployed at: %s", kernelFactory);
 
-        bytecode = type(ECDSAValidator).creationCode;
-        (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
-        require(success, "Failed to deploy ECDSAValidator");
-        address validator = address(bytes20(returnData));
-        console.log("ECDSAValidator deployed at: %s", validator);
+        // bytecode = type(ECDSAValidator).creationCode;
+        // (success, returnData) = DETERMINISTIC_CREATE2_FACTORY.call(abi.encodePacked(bytecode));
+        // require(success, "Failed to deploy ECDSAValidator");
+        // address validator = address(bytes20(returnData));
+        // console.log("ECDSAValidator deployed at: %s", validator);
 
         address validator = 0x180D6465F921C7E0DEA0040107D342c87455fFF5;
 
@@ -55,3 +55,14 @@ contract DeployKernel is Script {
 // New ones after changing the template
 // KernelFactory deployed at: 0x62095e340967c464152c79a1cC26a27e11e57e5c
 // ECDSAKernelFactory deployed at: 0xf7d5E0c8bDC24807c8793507a2aF586514f4c46e
+
+//  KernelFactory deployed at: 0x60e4Cdf23ff5aCDE91C854E4739bE0AdD3ED3FA8
+//   ECDSAKernelFactory deployed at: 0xF193603632f385b8736ed97de057f87E9A1c318b
+
+//after adding multi selector set execution
+// KernelFactory deployed at: 0x826F9E92137300dfDb895D47746Ef6e5445599CD
+// ECDSAKernelFactory deployed at: 0x9B394862cD684858d983AA87d87E755649CFcca1
+
+//after removing payment limi
+// KernelFactory deployed at: 0x83caeDDc39FBd4DfB3A1D2918ac71788974D237E
+// ECDSAKernelFactory deployed at: 0xCB181350a6e31DC0fbbb32594205A40BdfF68022

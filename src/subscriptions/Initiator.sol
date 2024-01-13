@@ -57,10 +57,10 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 
-        uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
-        if (lastPaid != 0) {
-            require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
-        }
+        // uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
+        // if (lastPaid != 0) {
+        //     require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
+        // }
 
         ISubExecutor(subscription.subscriber).processPayment();
     }
@@ -73,4 +73,6 @@ contract Initiator is Ownable, ReentrancyGuard {
         IERC20 token = IERC20(_token);
         token.transfer(owner(), token.balanceOf(address(this)));
     }
+
+    receive() external payable {}
 }
