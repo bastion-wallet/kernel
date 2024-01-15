@@ -12,11 +12,6 @@ contract SubExecutor is ReentrancyGuard {
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
     event subscriptionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
-    modifier onlyOwner() {
-        require(msg.sender == getKernelStorage().owner, "Only the owner can call this function");
-        _;
-    }
-
     // Function to get the wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
@@ -96,10 +91,6 @@ contract SubExecutor is ReentrancyGuard {
         return getKernelStorage().paymentRecords[_initiator];
     }
 
-    // function updateAllowance(uint256 _amount, address _initiator) external {
-    //     getKernelStorage().subscriptions[_initiator].paymentLimit = _amount;
-    // }
-
     function processPayment() external nonReentrant {
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
@@ -111,6 +102,8 @@ contract SubExecutor is ReentrancyGuard {
         if (paymentHistory.length > 0) {
             PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
             require(block.timestamp >= lastPayment.timestamp + sub.paymentInterval, "Payment interval not yet reached");
+        } else {
+            require(block.timestamp >= sub.validAfter + sub.paymentInterval, "Payment interval not yet reached");
         }
 
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
