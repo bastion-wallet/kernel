@@ -10,6 +10,12 @@ contract Initiator is Ownable, ReentrancyGuard {
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
 
+    /// @notice Registers a new subscription for a subscriber
+    /// @param _subscriber Address of the subscriber
+    /// @param _amount The amount for the subscription
+    /// @param _validUntil The timestamp until which the subscription is valid
+    /// @param _paymentInterval The interval at which payments should be made
+    /// @param _erc20Token The ERC20 token address used for payment (address(0) for ETH)
     function registerSubscription(
         address _subscriber,
         uint256 _amount,
@@ -35,21 +41,30 @@ contract Initiator is Ownable, ReentrancyGuard {
         subscribers.push(_subscriber);
     }
 
+    /// @notice Removes a subscription for a subscriber
+    /// @param _subscriber Address of the subscriber
     function removeSubscription(address _subscriber) public {
         require(msg.sender == _subscriber, "Only the subscriber can remove a subscription");
         delete subscriptionBySubscriber[_subscriber];
     }
 
+    /// @notice Retrieves the subscription details for a given subscriber
+    /// @param _subscriber Address of the subscriber
+    /// @return The subscription details
     function getSubscription(address _subscriber) public view returns (ISubExecutor.SubStorage memory) {
         ISubExecutor.SubStorage memory subscription = subscriptionBySubscriber[_subscriber];
         return subscription;
     }
 
+    /// @notice Returns the list of all subscribers
+    /// @return A list of addresses of subscribers
     function getSubscribers() public view returns (address[] memory) {
         return subscribers;
     }
 
-    // Function that calls processPayment from sub executor and initiates a payment
+    /// @notice Initiates a payment for a given subscriber
+    /// @param _subscriber Address of the subscriber
+    /// @dev This function ensures that the subscription is active and the payment interval has been reached
     function initiatePayment(address _subscriber) public nonReentrant {
         ISubExecutor.SubStorage storage subscription = subscriptionBySubscriber[_subscriber];
         require(subscription.validUntil > block.timestamp, "Subscription is not active");
@@ -57,18 +72,18 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 
-        // uint256 lastPaid = ISubExecutor(subscription.subscriber).getLastPaidTimestamp(address(this));
-        // if (lastPaid != 0) {
-        //     require(lastPaid + subscription.paymentInterval > block.timestamp, "Payment interval not yet reached");
-        // }
-
         ISubExecutor(subscription.subscriber).processPayment();
     }
 
+    /// @notice Withdraws all Ether held by the contract to the owner's address
+    /// @dev This function can only be called by the contract owner
     function withdrawETH() public onlyOwner {
         payable(owner()).transfer(address(this).balance);
     }
 
+    /// @notice Withdraws all of a specific ERC20 token held by the contract to the owner's address
+    /// @param _token The ERC20 token address
+    /// @dev This function can only be called by the contract owner
     function withdrawERC20(address _token) public onlyOwner {
         IERC20 token = IERC20(_token);
         token.transfer(owner(), token.balanceOf(address(this)));

@@ -12,7 +12,8 @@ contract SubExecutor is ReentrancyGuard {
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
     event subscriptionModified(address indexed _initiator, address indexed _subscriber, uint256 _amount);
 
-    // Function to get the wallet kernel storage
+    /// @notice Internal function to retrieve the kernel storage
+    /// @return ws The wallet kernel storage
     function getKernelStorage() internal pure returns (WalletKernelStorage storage ws) {
         bytes32 storagePosition = bytes32(uint256(keccak256("zerodev.kernel")) - 1);
         assembly {
@@ -20,7 +21,7 @@ contract SubExecutor is ReentrancyGuard {
         }
     }
 
-    // Modifier to check if the function is called by the entry point, the contract itself or the owner
+    /// @notice Modifier to ensure the caller is the entry point, the contract itself, or the owner
     modifier onlyFromEntryPointOrOwnerOrSelf() {
         address owner = getKernelStorage().owner;
         address entryPoint = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
@@ -31,6 +32,12 @@ contract SubExecutor is ReentrancyGuard {
         _;
     }
 
+    /// @notice Creates a subscription
+    /// @param _initiator Address of the initiator
+    /// @param _amount Amount to be subscribed
+    /// @param _interval Interval of payments in seconds
+    /// @param _validUntil Expiration timestamp of the subscription
+    /// @param _erc20Token Address of the ERC20 token for payment
     function createSubscription(
         address _initiator,
         uint256 _amount,
@@ -54,6 +61,12 @@ contract SubExecutor is ReentrancyGuard {
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
 
+    /// @notice Modifies an existing subscription
+    /// @param _initiator Address of the initiator
+    /// @param _amount New amount to be subscribed
+    /// @param _interval New interval of payments in seconds
+    /// @param _validUntil New expiration timestamp of the subscription
+    /// @param _erc20Token Address of the ERC20 token for payment
     function modifySubscription(
         address _initiator,
         uint256 _amount,
@@ -77,20 +90,29 @@ contract SubExecutor is ReentrancyGuard {
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }
 
+    /// @notice Revokes an existing subscription
+    /// @param _initiator Address of the initiator
     function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
         delete getKernelStorage().subscriptions[_initiator];
         Initiator(_initiator).removeSubscription(address(this));
         emit revokedApproval(_initiator);
     }
 
+    /// @notice Retrieves the subscription details
+    /// @param _initiator Address of the initiator
+    /// @return The subscription details
     function getSubscription(address _initiator) external view returns (SubStorage memory) {
         return getKernelStorage().subscriptions[_initiator];
     }
 
+    /// @notice Retrieves the payment history for a given initiator
+    /// @param _initiator Address of the initiator
+    /// @return An array of payment records
     function getPaymentHistory(address _initiator) external view returns (PaymentRecord[] memory) {
         return getKernelStorage().paymentRecords[_initiator];
     }
 
+    /// @notice Processes a payment for the subscription
     function processPayment() external nonReentrant {
         SubStorage storage sub = getKernelStorage().subscriptions[msg.sender];
         require(block.timestamp >= sub.validAfter, "Subscription not yet valid");
@@ -118,6 +140,9 @@ contract SubExecutor is ReentrancyGuard {
         emit paymentProcessed(msg.sender, sub.amount);
     }
 
+    /// @notice Gets the last payment timestamp for an initiator
+    /// @param _initiator Address of the initiator
+    /// @return The timestamp of the last payment
     function getLastPaidTimestamp(address _initiator) external view returns (uint256) {
         PaymentRecord[] storage paymentHistory = getKernelStorage().paymentRecords[_initiator];
         if (paymentHistory.length == 0) {
@@ -127,6 +152,7 @@ contract SubExecutor is ReentrancyGuard {
         return lastPayment.timestamp;
     }
 
+    /// @notice Processes an ERC20 payment for the subscription
     function _processERC20Payment(SubStorage storage sub) internal {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
@@ -134,6 +160,7 @@ contract SubExecutor is ReentrancyGuard {
         token.transferFrom(address(this), sub.initiator, sub.amount);
     }
 
+    /// @notice Processes a native payment for the subscription
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
         payable(sub.initiator).transfer(sub.amount);
