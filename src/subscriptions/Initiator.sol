@@ -40,6 +40,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
+        uint256 _validAfter,
         uint256 _paymentInterval,
         address _erc20Token
     ) public {
@@ -47,11 +48,12 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         require(_paymentInterval > 0, "Payment interval is 0");
         require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
         require(_subscriber.code.length > 0, "Subscriber is not a contract");
+        require(_validAfter >= block.timestamp, "Sub cannot be valid after a time in the past");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
             validUntil: _validUntil,
-            validAfter: block.timestamp,
+            validAfter: _validAfter,
             paymentInterval: _paymentInterval,
             subscriber: _subscriber,
             initiator: address(this),
@@ -89,7 +91,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     function initiatePayment(address _subscriber) public nonReentrant {
         ISubExecutor.SubStorage storage subscription = subscriptionBySubscriber[_subscriber];
         require(subscription.validUntil > block.timestamp, "Subscription is not active");
-        require(subscription.validAfter < block.timestamp, "Subscription is not active");
+        require(subscription.validAfter <= block.timestamp, "Subscription is not active");
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 

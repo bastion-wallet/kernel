@@ -11,6 +11,7 @@ interface IInitiator {
         address _subscriber,
         uint256 _amount,
         uint256 _validUntil,
+        uint256 _validAfter,
         uint256 _paymentInterval,
         address _erc20Token
     ) external;
