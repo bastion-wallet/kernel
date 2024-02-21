@@ -37,26 +37,28 @@ contract SubExecutor is ReentrancyGuard {
     /// @param _amount Amount to be subscribed
     /// @param _interval Interval of payments in seconds
     /// @param _validUntil Expiration timestamp of the subscription
+    /// @param _validAfter Initiation timestamp of the subscription
     /// @param _erc20Token Address of the ERC20 token for payment
     function createSubscription(
         address _initiator,
         uint256 _amount,
         uint256 _interval, // in seconds
         uint256 _validUntil, //timestamp
+        uint256 _validAfter, //timestamp
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         require(_amount > 0, "Subscription amount is 0");
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
             validUntil: _validUntil,
-            validAfter: block.timestamp,
+            validAfter: _validAfter,
             paymentInterval: _interval,
             subscriber: address(this),
             initiator: _initiator,
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -66,18 +68,20 @@ contract SubExecutor is ReentrancyGuard {
     /// @param _amount New amount to be subscribed
     /// @param _interval New interval of payments in seconds
     /// @param _validUntil New expiration timestamp of the subscription
+    /// @param _validAfter New initiation timestamp of the subscription
     /// @param _erc20Token Address of the ERC20 token for payment
     function modifySubscription(
         address _initiator,
         uint256 _amount,
         uint256 _interval,
         uint256 _validUntil,
+        uint256 _validAfter,
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
             validUntil: _validUntil,
-            validAfter: block.timestamp,
+            validAfter: _validAfter,
             paymentInterval: _interval,
             subscriber: address(this),
             initiator: _initiator,
@@ -85,7 +89,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token);
 
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }

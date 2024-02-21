@@ -34,6 +34,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @param _subscriber Address of the subscriber
     /// @param _amount The amount for the subscription
     /// @param _validUntil The timestamp until which the subscription is valid
+    /// @param _validAfter Initiation timestamp of the subscription
     /// @param _paymentInterval The interval at which payments should be made
     /// @param _erc20Token The ERC20 token address used for payment (address(0) for ETH)
     function registerSubscription(
