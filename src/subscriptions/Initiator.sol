@@ -5,14 +5,12 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/ISubExecutor.sol";
+import "../interfaces/IInitiator.sol";
 
-contract Initiator is Ownable, ReentrancyGuard {
+contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
     mapping(address => bool) public whitelistedAddresses;
-
-    event AddressAdded(address indexed _address);
-    event AddressRemoved(address indexed _address);
 
     function whitelistTokenForPayment(address _tokenAddress) external onlyOwner {
         require(!whitelistedAddresses[_tokenAddress], "Address is already whitelisted");
@@ -26,6 +24,10 @@ contract Initiator is Ownable, ReentrancyGuard {
         delete whitelistedAddresses[_tokenAddress];
 
         emit AddressRemoved(_tokenAddress);
+    }
+
+    function isValidERC20PaymentToken(address _tokenAddress) public view returns (bool) {
+        return whitelistedAddresses[_tokenAddress];
     }
 
     /// @notice Registers a new subscription for a subscriber

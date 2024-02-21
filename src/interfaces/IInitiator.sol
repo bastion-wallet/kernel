@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
-interface Initiator {
+interface IInitiator {
     // mapping(address => ISubExecutor.SubStorage[]) public subscriptions;
+
+    event AddressAdded(address indexed _address);
+    event AddressRemoved(address indexed _address);
 
     function registerSubscription(
         address _subscriber,
@@ -16,4 +19,6 @@ interface Initiator {
     function initiatePayment(address _subscriber) external;
 
     function removeSubscription(address _subscriber) external;
+
+    function isValidERC20PaymentToken(address _tokenAddress) external view returns (bool);
 }

@@ -56,7 +56,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -85,7 +85,7 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        Initiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _interval, _erc20Token);
 
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }
@@ -94,7 +94,7 @@ contract SubExecutor is ReentrancyGuard {
     /// @param _initiator Address of the initiator
     function revokeSubscription(address _initiator) external onlyFromEntryPointOrOwnerOrSelf {
         delete getKernelStorage().subscriptions[_initiator];
-        Initiator(_initiator).removeSubscription(address(this));
+        IInitiator(_initiator).removeSubscription(address(this));
         emit revokedApproval(_initiator);
     }
 
@@ -131,7 +131,7 @@ contract SubExecutor is ReentrancyGuard {
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
 
         //Check whether it's a native payment or ERC20 or ERC721
-        if (Initiator(sub.initiator).whitelistedAddresses[sub.erc20Token]) {
+        if (IInitiator(payable(sub.initiator)).isValidERC20PaymentToken(sub.erc20Token)) {
             _processERC20Payment(sub);
         } else if(sub.erc20Token == address(0)) {
             _processNativePayment(sub);
