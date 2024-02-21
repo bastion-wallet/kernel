@@ -131,10 +131,13 @@ contract SubExecutor is ReentrancyGuard {
         getKernelStorage().paymentRecords[msg.sender].push(PaymentRecord(sub.amount, block.timestamp, sub.subscriber));
 
         //Check whether it's a native payment or ERC20 or ERC721
-        if (sub.erc20TokensValid) {
+        if (Initiator(sub.initiator).whitelistedAddresses[sub.erc20Token]) {
             _processERC20Payment(sub);
-        } else {
+        } else if(sub.erc20Token == address(0)) {
             _processNativePayment(sub);
+        }
+        else{
+            revert("neither valid ERC20 nor native payment");
         }
 
         emit paymentProcessed(msg.sender, sub.amount);

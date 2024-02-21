@@ -9,6 +9,24 @@ import "../interfaces/ISubExecutor.sol";
 contract Initiator is Ownable, ReentrancyGuard {
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
+    mapping(address => bool) public whitelistedAddresses;
+
+    event AddressAdded(address indexed _address);
+    event AddressRemoved(address indexed _address);
+
+    function whitelistTokenForPayment(address _tokenAddress) external onlyOwner {
+        require(!whitelistedAddresses[_tokenAddress], "Address is already whitelisted");
+        whitelistedAddresses[_tokenAddress] = true;
+
+        emit AddressAdded(_tokenAddress);
+    }
+
+    function removeTokenForPayment(address _tokenAddress) external onlyOwner {
+        require(whitelistedAddresses[_tokenAddress], "Address is not whitelisted");
+        delete whitelistedAddresses[_tokenAddress];
+
+        emit AddressRemoved(_tokenAddress);
+    }
 
     /// @notice Registers a new subscription for a subscriber
     /// @param _subscriber Address of the subscriber
