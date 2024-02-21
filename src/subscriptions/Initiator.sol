@@ -26,6 +26,7 @@ contract Initiator is Ownable, ReentrancyGuard {
         require(_amount > 0, "Subscription amount is 0");
         require(_paymentInterval > 0, "Payment interval is 0");
         require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
+        require(_subscriber.code.length > 0, "Subscriber is not a contract");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
