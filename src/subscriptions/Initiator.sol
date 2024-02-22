@@ -10,6 +10,9 @@ import "../interfaces/IInitiator.sol";
 
 contract Initiator is IInitiator, Ownable, ReentrancyGuard {
 
+    event WithdrawETH(uint256 indexed amount);
+    event WithdrawERC20(address indexed token, uint256 indexed amount);
+
     using SafeERC20 for IERC20;
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
@@ -104,8 +107,10 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @notice Withdraws all Ether held by the contract to the owner's address
     /// @dev This function can only be called by the contract owner
     function withdrawETH() public onlyOwner {
-        (bool success, ) = owner().call{value: address(this).balance}("");
+        uint256 amount = address(this).balance;
+        (bool success, ) = owner().call{value: amount}("");
         require(success, "WithdrawETH failed.");
+        emit WithdrawETH(amount);
     }
 
     /// @notice Withdraws all of a specific ERC20 token held by the contract to the owner's address
@@ -113,7 +118,9 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @dev This function can only be called by the contract owner
     function withdrawERC20(address _token) public onlyOwner {
         IERC20 token = IERC20(_token);
-        token.safeTransfer(owner(), token.balanceOf(address(this)));
+        uint256 amount = token.balanceOf(address(this));
+        token.safeTransfer(owner(), amount);
+        emit WithdrawERC20(_token, amount);
     }
 
     receive() external payable {}
