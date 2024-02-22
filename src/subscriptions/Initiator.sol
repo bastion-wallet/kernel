@@ -53,6 +53,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
         require(_subscriber.code.length > 0, "Subscriber is not a contract");
         require(_validAfter >= block.timestamp, "Sub cannot be valid after a time in the past");
+        require(_validUntil > _validAfter, "Wrong subscription's timestamp validity");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
@@ -94,8 +95,6 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @dev This function ensures that the subscription is active and the payment interval has been reached
     function initiatePayment(address _subscriber) public nonReentrant {
         ISubExecutor.SubStorage storage subscription = subscriptionBySubscriber[_subscriber];
-        require(subscription.validUntil > block.timestamp, "Subscription is not active");
-        require(subscription.validAfter <= block.timestamp, "Subscription is not active");
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 

@@ -50,7 +50,6 @@ contract SubExecutor is ReentrancyGuard {
         uint256 _validAfter, //timestamp
         address _erc20Token
     ) external onlyFromEntryPointOrOwnerOrSelf {
-        require(_amount > 0, "Subscription amount is 0");
         getKernelStorage().subscriptions[_initiator] = SubStorage({
             amount: _amount,
             validUntil: _validUntil,
