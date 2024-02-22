@@ -105,7 +105,8 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @notice Withdraws all Ether held by the contract to the owner's address
     /// @dev This function can only be called by the contract owner
     function withdrawETH() public onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        (bool success, ) = owner().call{value: address(this).balance}("");
+        require(success, "WithdrawETH failed.");
     }
 
     /// @notice Withdraws all of a specific ERC20 token held by the contract to the owner's address

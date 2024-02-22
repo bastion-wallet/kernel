@@ -173,6 +173,7 @@ contract SubExecutor is ReentrancyGuard {
     /// @notice Processes a native payment for the subscription
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
-        payable(sub.initiator).transfer(sub.amount);
+        (bool success, ) = sub.initiator.call{value: sub.amount}("");
+        require(success, "ProcessNativePayment failed.");
     }
 }
