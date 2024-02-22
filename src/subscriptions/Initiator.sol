@@ -2,12 +2,15 @@
 pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/ISubExecutor.sol";
 import "../interfaces/IInitiator.sol";
 
 contract Initiator is IInitiator, Ownable, ReentrancyGuard {
+
+    using SafeERC20 for IERC20;
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
     mapping(address => bool) public whitelistedAddresses;
@@ -110,7 +113,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @dev This function can only be called by the contract owner
     function withdrawERC20(address _token) public onlyOwner {
         IERC20 token = IERC20(_token);
-        token.transfer(owner(), token.balanceOf(address(this)));
+        token.safeTransfer(owner(), token.balanceOf(address(this)));
     }
 
     receive() external payable {}

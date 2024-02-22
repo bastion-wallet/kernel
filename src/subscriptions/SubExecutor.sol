@@ -2,11 +2,14 @@
 pragma solidity >=0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
+
+    using SafeERC20 for IERC20;
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
@@ -164,7 +167,7 @@ contract SubExecutor is ReentrancyGuard {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
-        token.transferFrom(address(this), sub.initiator, sub.amount);
+        token.safeTransferFrom(address(this), sub.initiator, sub.amount);
     }
 
     /// @notice Processes a native payment for the subscription
