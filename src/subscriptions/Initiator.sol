@@ -15,6 +15,8 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
+    mapping(address => bool) public isSubscriber;
+    mapping(address => uint256) public subscriberByIndex; // (subscriberAddress => index)
     address[] public subscribers;
     mapping(address => bool) public whitelistedAddresses;
 
@@ -69,7 +71,11 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
             erc20Token: _erc20Token
         });
         subscriptionBySubscriber[_subscriber] = sub;
-        subscribers.push(_subscriber);
+        if (!isSubscriber[_subscriber]) {
+            subscribers.push(_subscriber);
+            isSubscriber[_subscriber] = true;
+            subscriberByIndex[_subscriber] = subscribers.length - 1;
+        }
     }
 
     /// @notice Removes a subscription for a subscriber
@@ -77,6 +83,12 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     function removeSubscription(address _subscriber) public {
         require(msg.sender == _subscriber, "Only the subscriber can remove a subscription");
         delete subscriptionBySubscriber[_subscriber];
+
+        uint256 index = subscriberByIndex[_subscriber];
+        address lastSubscriber = subscribers[subscribers.length - 1];
+        subscribers[index] = lastSubscriber;
+        subscriberByIndex[lastSubscriber] = index;
+        subscribers.pop();
     }
 
     /// @notice Retrieves the subscription details for a given subscriber
