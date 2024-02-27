@@ -8,8 +8,8 @@ import "../abstract/KernelStorage.sol";
 import "../interfaces/IInitiator.sol";
 
 contract SubExecutor is ReentrancyGuard {
-
     using SafeERC20 for IERC20;
+
     event revokedApproval(address indexed _subscriber);
     event paymentProcessed(address indexed _subscriber, uint256 _amount);
     event subscriptionCreated(address indexed _initiator, address indexed _subscriber, uint256 _amount);
@@ -60,7 +60,9 @@ contract SubExecutor is ReentrancyGuard {
             erc20Token: _erc20Token,
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
-        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(
+            address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token
+        );
 
         emit subscriptionCreated(msg.sender, _initiator, _amount);
     }
@@ -91,7 +93,9 @@ contract SubExecutor is ReentrancyGuard {
             erc20TokensValid: _erc20Token == address(0) ? false : true
         });
 
-        IInitiator(_initiator).registerSubscription(address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token);
+        IInitiator(_initiator).registerSubscription(
+            address(this), _amount, _validUntil, _validAfter, _interval, _erc20Token
+        );
 
         emit subscriptionModified(msg.sender, _initiator, _amount);
     }
@@ -139,10 +143,9 @@ contract SubExecutor is ReentrancyGuard {
         //Check whether it's a native payment or ERC20 or ERC721
         if (IInitiator(payable(sub.initiator)).isValidERC20PaymentToken(sub.erc20Token)) {
             _processERC20Payment(sub);
-        } else if(sub.erc20Token == address(0)) {
+        } else if (sub.erc20Token == address(0)) {
             _processNativePayment(sub);
-        }
-        else{
+        } else {
             revert("neither valid ERC20 nor native payment");
         }
 
@@ -166,13 +169,13 @@ contract SubExecutor is ReentrancyGuard {
         IERC20 token = IERC20(sub.erc20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= sub.amount, "Insufficient token balance");
-        token.safeTransferFrom(address(this), sub.initiator, sub.amount);
+        token.safeTransfer(sub.initiator, sub.amount);
     }
 
     /// @notice Processes a native payment for the subscription
     function _processNativePayment(SubStorage storage sub) internal {
         require(address(this).balance >= sub.amount, "Insufficient Ether balance");
-        (bool success, ) = sub.initiator.call{value: sub.amount}("");
+        (bool success,) = sub.initiator.call{value: sub.amount}("");
         require(success, "ProcessNativePayment failed.");
     }
 }

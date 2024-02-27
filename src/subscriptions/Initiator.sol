@@ -9,11 +9,11 @@ import "../interfaces/ISubExecutor.sol";
 import "../interfaces/IInitiator.sol";
 
 contract Initiator is IInitiator, Ownable, ReentrancyGuard {
-
     event WithdrawETH(uint256 indexed amount);
     event WithdrawERC20(address indexed token, uint256 indexed amount);
 
     using SafeERC20 for IERC20;
+
     mapping(address => ISubExecutor.SubStorage) public subscriptionBySubscriber;
     address[] public subscribers;
     mapping(address => bool) public whitelistedAddresses;
@@ -55,8 +55,8 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         require(_paymentInterval > 0, "Payment interval is 0");
         require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
         require(_subscriber.code.length > 0, "Subscriber is not a contract");
-        require(_validAfter >= block.timestamp, "Sub cannot be valid after a time in the past");
-        require(_validUntil > _validAfter, "Wrong subscription's timestamp validity");
+        require(_validAfter >= block.timestamp, "validAfter cannot be in the past");
+        require(_validUntil > _validAfter, "validUntil timestamp is wrong");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
@@ -108,7 +108,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @dev This function can only be called by the contract owner
     function withdrawETH() public onlyOwner {
         uint256 amount = address(this).balance;
-        (bool success, ) = owner().call{value: amount}("");
+        (bool success,) = owner().call{value: amount}("");
         require(success, "WithdrawETH failed.");
         emit WithdrawETH(amount);
     }
