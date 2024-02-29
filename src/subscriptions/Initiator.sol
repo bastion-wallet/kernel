@@ -59,6 +59,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         require(_subscriber.code.length > 0, "Subscriber is not a contract");
         require(_validAfter >= block.timestamp, "validAfter cannot be in the past");
         require(_validUntil > _validAfter, "validUntil timestamp is wrong");
+        require(!isSubscriber[_subscriber], "Subscriber already has a subscription");
 
         ISubExecutor.SubStorage memory sub = ISubExecutor.SubStorage({
             amount: _amount,
