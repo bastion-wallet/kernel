@@ -72,11 +72,10 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
             erc20Token: _erc20Token
         });
         subscriptionBySubscriber[_subscriber] = sub;
-        if (!isSubscriber[_subscriber]) {
-            subscribers.push(_subscriber);
-            isSubscriber[_subscriber] = true;
-            subscriberByIndex[_subscriber] = subscribers.length - 1;
-        }
+
+        subscribers.push(_subscriber);
+        isSubscriber[_subscriber] = true;
+        subscriberByIndex[_subscriber] = subscribers.length - 1;
     }
 
     /// @notice Removes a subscription for a subscriber
