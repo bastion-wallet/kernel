@@ -25,4 +25,6 @@ interface IInitiator {
 
     function getLastPaidTimestamp(address _initiator) external view returns (uint256);
 
+    function setSubscriptionModuleAddress(address _subscriptionModuleAddress) external;
+
 }

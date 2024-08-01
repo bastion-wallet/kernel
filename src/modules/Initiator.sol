@@ -29,6 +29,10 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         subscriptionModuleAddress = _subscriptionModuleAddress;
     }
 
+    function setSubscriptionModuleAddress(address _subscriptionModuleAddress) external onlyOwner {
+        subscriptionModuleAddress = _subscriptionModuleAddress;
+    }
+
     function whitelistTokenForPayment(address _tokenAddress) external onlyOwner {
         require(!whitelistedAddresses[_tokenAddress], "Address is already whitelisted");
         whitelistedAddresses[_tokenAddress] = true;
@@ -64,8 +68,9 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     ) public {
         require(_amount > 0, "Subscription amount is 0");
         require(_paymentInterval > 0, "Payment interval is 0");
-        require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
-        require(_subscriber.code.length > 0, "Subscriber is not a contract");
+        require(msg.sender == subscriptionModuleAddress, "not from subscriptionModule");
+        // require(msg.sender == _subscriber, "Only the subscriber can register a subscription");
+        // require(_subscriber.code.length > 0, "Subscriber is not a contract");
         require(_validAfter >= block.timestamp, "Sub cannot be valid after a time in the past");
         require(_validUntil > _validAfter, "Wrong subscription's timestamp validity");
 
@@ -87,7 +92,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     /// @notice Removes a subscription for a subscriber
     /// @param _subscriber Address of the subscriber
     function removeSubscription(address _subscriber) public {
-        require(msg.sender == _subscriber, "Only the subscriber can remove a subscription");
+        require(msg.sender == subscriptionModuleAddress, "not from subscriptionModule");
         delete subscriptionBySubscriber[_subscriber];
     }
 

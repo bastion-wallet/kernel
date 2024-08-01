@@ -84,18 +84,15 @@ contract SubscriptionModule is ISubscriptionModule, ReentrancyGuard {
     /// @notice Processes an ERC20 payment for the subscription
     function _processERC20Payment(Subscription memory sub) internal {
         IERC20 token = IERC20(sub.erc20Token);
-        uint256 balance = token.balanceOf(msg.sender);
+        uint256 balance = token.balanceOf(sub.subscriber);
         require(balance >= sub.amount, "Insufficient token balance");
-        // token.safeTransferFrom(msg.sender, sub.initiator, sub.amount);
-        _transfer(IGnosisSafe(msg.sender), sub.erc20Token, payable(sub.initiator) ,sub.amount);
+        _transfer(IGnosisSafe(sub.subscriber), sub.erc20Token, payable(sub.initiator) ,sub.amount);
     }
 
     /// @notice Processes a native payment for the subscription
     function _processNativePayment(Subscription memory sub) internal {
-        require(msg.sender.balance >= sub.amount, "Insufficient Ether balance");
-        // (bool success, ) = sub.initiator.call{value: sub.amount}("");
-        // require(success, "ProcessNativePayment failed.");
-        _transfer(IGnosisSafe(msg.sender), address(0), payable(sub.initiator) ,sub.amount);
+        require(sub.subscriber.balance >= sub.amount, "Insufficient Ether balance");
+        _transfer(IGnosisSafe(sub.subscriber), address(0), payable(sub.initiator) ,sub.amount);
         
     }
 
