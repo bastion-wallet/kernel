@@ -1,0 +1,71 @@
+## `Initiator` and `SubscriptionModule` contracts in the `modules` folder are created as a Subscription module for Safe (Gnosis Safe) accounts.
+
+## Initiator
+
+The `Initiator` contract is responsible for managing subscriptions and processing payments for subscribers. Each platform should deploy their own Initiator contract.
+It keeps record of subscribers, subscriptions and payment history.
+
+### Functions
+
+- `constructor(address _subscriptionModuleAddress)`: Initializes the contract with the address of the `SubscriptionModule` contract.
+
+- `setSubscriptionModuleAddress(address _subscriptionModuleAddress)`: Sets the address of the `SubscriptionModule` contract.
+
+- `whitelistTokenForPayment(address _tokenAddress)`: Adds a token to the whitelist of tokens that can be used for payment.
+
+- `removeTokenForPayment(address _tokenAddress)`: Removes a token from the whitelist of tokens that can be used for payment.
+
+- `isValidERC20PaymentToken(address _tokenAddress)`: Checks if a token is valid for payment.
+
+- `registerSubscription(uint256 _amount, uint256 _validUntil, uint256 _validAfter, uint256 _paymentInterval, address _erc20Token)`: Registers a subscription for the initiator.
+
+- `removeSubscription(address _subscriber)`: Removes a subscription for a subscriber.
+
+- `processPayment(Subscription memory sub)`: Processes a payment for a subscription.
+
+
+## SubscriptionModule
+
+The `SubscriptionModule` contract is a Safe Module responsible for managing subscriptions and processing payments for subscribers. It is the central contract that handles all subscription-related operations.
+
+### Structs
+
+- `Subscription`: Represents a subscription. It contains information such as the amount, validity period, payment interval, subscriber, initiator, and whether the subscription is valid for ERC20 tokens.
+
+### Functions
+
+- `constructor()`: Initializes the contract.
+
+- `registerSubscription(address _subscriber, uint256 _amount, uint256 _validUntil, uint256 _validAfter, uint256 _paymentInterval, address _erc20Token)`: Registers a subscription for a subscriber.
+
+- `revokeSubscription(address _initiator)`: Revokes an existing subscription.
+
+- `processPayment(Subscription memory sub)`: Processes a payment for a subscription.
+
+- `_processERC20Payment(Subscription memory sub)`: Processes an ERC20 payment for a subscription.
+
+- `_processNativePayment(Subscription memory sub)`: Processes a native payment for a subscription.
+
+- `_transfer(IGnosisSafe safe, address token, address payable to, uint256 amount)`: Transfers tokens from Safe account to other addresses.
+
+
+
+## Contract Data Flow
+1. Initiator Contract:
+   - The `Initiator` contract handles all subscription-related operations logic and storage.
+   - It receives the subscription registration,  removal, and modification from the `SubscriptionModule` contract.
+   - The `Initiator` contract calls the `processPayment` function of the `SubscriptionModule` contract to process a payment for a subscription.
+   - The `Initiator` contract processes the subscription registration, removal, and payment requests.
+   - The `Initiator` contract stores the subscription details in its internal storage.
+
+
+2. SubscriptionModule Contract:
+   - The `SubscriptionModule` contract handles all subscription-related operations as entry point.
+   - The `SubscriptionModule` contract interacts with the `Initiator` contract to register, remove, and process subscriptions.
+   - The `SubscriptionModule` contract calls the `registerSubscription` function of the `Initiator` contract to register a new subscription.
+   - The `SubscriptionModule` contract calls the `removeSubscription` function of the `Initiator` contract to remove an existing subscription.
+   - The `SubscriptionModule` contract may transfer tokens from the Safe account to the subscriber's address.
+
+## In summary, the `SubscriptionModule` contract acts as the entry point and interacts with the `Initiator` contract to manage subscriptions and process payments. 
+The `Initiator` contract handles the registration, removal, and processing of subscriptions.
+
