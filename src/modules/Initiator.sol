@@ -169,5 +169,9 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         return paymentRecords[_subscriber];
     }
 
+    function getAllSubscriptions() external view returns (ISubscriptionModule.Subscription[] memory) {
+        return subscriptions;
+    }
+
     receive() external payable {}
 }
