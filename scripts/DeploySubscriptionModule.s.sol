@@ -5,7 +5,7 @@ import "src/modules/Initiator.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract DeploySampleNFT is Script {
+contract DeploySubscriptionModule is Script {
     address internal constant DETERMINISTIC_CREATE2_FACTORY = 0x7A0D94F55792C434d74a40883C6ed8545E406D12;
 
     function run() public {
@@ -20,7 +20,8 @@ contract DeploySampleNFT is Script {
         address subscriptionModule = address(bytes20(returnData));
         console.log("SubscriptionModule deployed at: %s", subscriptionModule);
 
-
+        //address subscriptionModule = 0x2cb3335D681d2C00a5c4eCeEdf0a29635367DAB9;
+        bytes memory bytecode1 = type(SubscriptionModule).creationCode;
         bytes memory bytecode2 = type(Initiator).creationCode;
         bool success2;
         
