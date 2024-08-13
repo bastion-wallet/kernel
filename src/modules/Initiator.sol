@@ -25,8 +25,9 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     //mappping of subscriber address to payment records
     mapping(address => ISubscriptionModule.PaymentRecord[]) public paymentRecords;
 
-    constructor(address _subscriptionModuleAddress) {
+    constructor(address _subscriptionModuleAddress, address _owner) {
         subscriptionModuleAddress = _subscriptionModuleAddress;
+        _transferOwnership(_owner);
     }
 
     function setSubscriptionModuleAddress(address _subscriptionModuleAddress) external onlyOwner {

@@ -17,15 +17,18 @@ contract SubscriptionModuleTest is Test {
     address subscriber;
     uint256 subscriberKey;
     address mockToken;
+    address feeReceiver;
+    uint256 feeReceiverKey;
 
     function setUp() public {
         (subscriber, subscriberKey) = makeAddrAndKey("subscriber");
+        (feeReceiver, feeReceiverKey) = makeAddrAndKey("feeReceiver");
         console.log("subscriber %s", subscriber);
-        subscriptionModule = new SubscriptionModule();
-        initiator = new Initiator(address(subscriptionModule));
-        initiator.setSubscriptionModuleAddress(address(subscriptionModule));
+        subscriptionModule = new SubscriptionModule(feeReceiver);
+        initiator = new Initiator(address(subscriptionModule), subscriber);
         mockToken = address(makeMockToken());
         console.log("mockToken %s", mockToken);
+        vm.startPrank(subscriber);
         initiator.whitelistTokenForPayment(mockToken);
     }
 
@@ -35,6 +38,7 @@ contract SubscriptionModuleTest is Test {
         address payable initiatorAddr = payable(subscriptionModule.initiators(0));
         address _subModuleAddr = Initiator(initiatorAddr).subscriptionModuleAddress();
         address[] memory allInitiators = subscriptionModule.getAllInitiatorsOfUser(subscriber);
+        initiator.setSubscriptionModuleAddress(address(subscriptionModule));
 
         assertEq(_subModuleAddr, address(subscriptionModule));
         assertEq(allInitiators[0], initiatorAddr);
