@@ -4,6 +4,7 @@ pragma solidity >=0.8.9;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "./Initiator.sol";
 import "./interfaces/ISubscriptionModule.sol";
 import "./interfaces/IInitiator.sol";
 import  "./interfaces/IGnosisSafe.sol";
@@ -12,8 +13,23 @@ import  "./interfaces/IGnosisSafe.sol";
 contract SubscriptionModule is ISubscriptionModule, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
-    event SubscriptionCreated(address indexed _subscriber, address indexed _initiator,  uint256 _amount);
-    event SubscriptionModified(address indexed _subscriber, address indexed _initiator, uint256 _amount);
+    address[] public initiators;
+    
+    //mapping of user to created by initiators
+    mapping(address => address[]) public initiatorByUser;
+
+    //function to register intitator
+    function registerInitiator() external {
+        IInitiator _initiator = new Initiator(address(this)); 
+        address initiatorAddr = address(_initiator);
+        initiators.push(initiatorAddr);
+        initiatorByUser[msg.sender].push(initiatorAddr);
+        emit InitiatorRegistered(initiatorAddr, msg.sender);
+    }
+
+    function getAllInitiatorsOfUser(address _creator) external view returns(address[] memory) {
+        return initiatorByUser[_creator];
+    }
     
     /// @notice Creates a subscription
     /// @param _initiator Address of the initiator

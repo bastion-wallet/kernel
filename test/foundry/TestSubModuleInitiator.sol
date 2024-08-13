@@ -29,6 +29,17 @@ contract SubscriptionModuleTest is Test {
         initiator.whitelistTokenForPayment(mockToken);
     }
 
+    function test_registerInitiator() public {
+        vm.startPrank(subscriber);
+        subscriptionModule.registerInitiator();
+        address payable initiatorAddr = payable(subscriptionModule.initiators(0));
+        address _subModuleAddr = Initiator(initiatorAddr).subscriptionModuleAddress();
+        address[] memory allInitiators = subscriptionModule.getAllInitiatorsOfUser(subscriber);
+
+        assertEq(_subModuleAddr, address(subscriptionModule));
+        assertEq(allInitiators[0], initiatorAddr);
+    }
+
     function test_createSubscription() public {
         vm.startPrank(subscriber);
         // address mockToken = address(makeMockToken());

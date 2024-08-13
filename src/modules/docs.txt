@@ -35,6 +35,7 @@ The `SubscriptionModule` contract is a Safe Module responsible for managing subs
 ### Functions
 
 - `constructor()`: Initializes the contract.
+- `registerInitiator()`: create `Initiator` contract
 
 - `registerSubscription(address _subscriber, uint256 _amount, uint256 _validUntil, uint256 _validAfter, uint256 _paymentInterval, address _erc20Token)`: Registers a subscription for a subscriber.
 
@@ -61,7 +62,7 @@ The `SubscriptionModule` contract is a Safe Module responsible for managing subs
 
 2. SubscriptionModule Contract:
    - The `SubscriptionModule` contract handles all subscription-related operations as entry point.
-   - The `SubscriptionModule` contract interacts with the `Initiator` contract to register, remove, and process subscriptions.
+   - The `SubscriptionModule` contract creates and interacts with the `Initiator` contract to register, remove, and process subscriptions.
    - The `SubscriptionModule` contract calls the `registerSubscription` function of the `Initiator` contract to register a new subscription.
    - The `SubscriptionModule` contract calls the `removeSubscription` function of the `Initiator` contract to remove an existing subscription.
    - The `SubscriptionModule` contract may transfer tokens from the Safe account to the subscriber's address.
