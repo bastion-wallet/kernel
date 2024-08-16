@@ -14,6 +14,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
     address[] public subscribers;
+    address[] public whitelistedERC20Tokens;
 
     mapping(address => ISubscriptionModule.Subscription) public subscriptionBySubscriber;
 
@@ -37,14 +38,13 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
     function whitelistTokenForPayment(address _tokenAddress) external onlyOwner {
         require(!whitelistedAddresses[_tokenAddress], "Address is already whitelisted");
         whitelistedAddresses[_tokenAddress] = true;
-
+        whitelistedERC20Tokens.push(_tokenAddress);
         emit AddressAdded(_tokenAddress);
     }
 
     function removeTokenForPayment(address _tokenAddress) external onlyOwner {
         require(whitelistedAddresses[_tokenAddress], "Address is not whitelisted");
         delete whitelistedAddresses[_tokenAddress];
-
         emit AddressRemoved(_tokenAddress);
     }
 
