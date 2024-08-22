@@ -16,7 +16,7 @@ contract SubscriptionModule is ISubscriptionModule, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     address[] public initiators;
 
-    uint256 public constant SERVICE_FEE_PERCENT = 2; // 2% service fee
+    uint256 public constant SERVICE_FEE_PERCENT = 20; // 2% service fee, 1000 MAX BPS
     address public feeReceiverAddress;
     //mapping of user to created by initiators
     mapping(address => address[]) public initiatorByUser;

@@ -119,7 +119,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
         require(subscription.amount > 0, "Subscription amount is 0");
         require(subscription.paymentInterval > 0, "Payment interval is 0");
 
-        ISubscriptionModule.PaymentRecord[] storage paymentHistory = paymentRecords[msg.sender];
+        ISubscriptionModule.PaymentRecord[] storage paymentHistory = paymentRecords[_subscriber];
         if (paymentHistory.length > 0) {
             ISubscriptionModule.PaymentRecord storage lastPayment = paymentHistory[paymentHistory.length - 1];
             require(block.timestamp >= lastPayment.timestamp + subscription.paymentInterval, "Payment interval not yet reached");
@@ -127,7 +127,7 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
             require(block.timestamp >= subscription.validAfter + subscription.paymentInterval, "Payment interval not yet reached");
         }
 
-        paymentRecords[msg.sender].push(ISubscriptionModule.PaymentRecord(subscription.amount, block.timestamp, subscription.subscriber));
+        paymentRecords[_subscriber].push(ISubscriptionModule.PaymentRecord(subscription.amount, block.timestamp, subscription.subscriber));
 
         ISubscriptionModule(subscriptionModuleAddress).processPayment(subscription);
     }
@@ -172,6 +172,11 @@ contract Initiator is IInitiator, Ownable, ReentrancyGuard {
 
     function getAllSubscriptions() external view returns (ISubscriptionModule.Subscription[] memory) {
         return subscriptions;
+    }
+
+    //function to get all whitelisted tokens
+    function getWhitelistedTokens() external view returns (address[] memory) {
+        return whitelistedERC20Tokens;
     }
 
     receive() external payable {}
